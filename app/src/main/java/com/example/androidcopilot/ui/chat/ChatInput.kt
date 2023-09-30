@@ -1,4 +1,4 @@
-package com.example.androidcopilot.chat.ui
+package com.example.androidcopilot.ui.chat
 
 import android.Manifest
 import androidx.compose.foundation.background

@@ -1,8 +1,8 @@
 package com.example.androidcopilot.chat.model
 
 import androidx.lifecycle.ViewModel
-import com.example.androidcopilot.chat.ui.InputMode
-import com.example.androidcopilot.chat.ui.SendState
+import com.example.androidcopilot.ui.chat.InputMode
+import com.example.androidcopilot.ui.chat.SendState
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class ChatMessageViewModel: ViewModel() {

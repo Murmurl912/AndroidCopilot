@@ -1,10 +1,9 @@
-package com.example.androidcopilot.chat.ui
+package com.example.androidcopilot.ui.chat
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,9 +57,56 @@ fun ChatConversationScreen(
 internal fun ChatConversationPreview() {
     ChatConversationScreen(viewModel = ChatMessageViewModel().apply {
         messageList.value = listOf(
-            ChatMessage.AssistantMessage(0, "你不要吓我"),
-            ChatMessage.HumanMessage(1, "你不要吓我"),
-            ChatMessage.SystemMessage(2, "你不要吓我")
+            ChatMessage.AssistantMessage(
+                0,
+                0,
+                0,
+                "你不要骗我",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            ),
+            ChatMessage.HumanMessage(
+                1,
+                0,
+                0,
+                "你不要吓我",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            ),
+            ChatMessage.SystemMessage(
+                2,
+                0,
+                0,
+                "推出了群聊",
+                0,
+                0,
+            ),
+            ChatMessage.FunctionCallRequestMessage(
+                3,
+                0,
+                0,
+                "Android Copilot Request GPS Location Access",
+                "",
+                "",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            ),
+            ChatMessage.FunctionCallResponseMessage(
+                4,
+                0,
+                0,
+                "You denied Location Access",
+                "",
+                "",
+                "",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            )
+
         )
     })
 }

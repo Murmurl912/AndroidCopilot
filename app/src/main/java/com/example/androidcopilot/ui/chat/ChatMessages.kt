@@ -1,4 +1,4 @@
-package com.example.androidcopilot.chat.ui
+package com.example.androidcopilot.ui.chat
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +46,18 @@ fun ChatMessageList(
                         message = message
                     )
 
+                }
+                is ChatMessage.FunctionCallRequestMessage -> {
+                    FunctionCallRequestMessageItem(
+                        Modifier.fillMaxWidth(),
+                        message = message
+                    )
+                }
+                is ChatMessage.FunctionCallResponseMessage -> {
+                    FunctionCallResponseMessageItem(
+                        Modifier.fillMaxWidth(),
+                        message = message
+                    )
                 }
                 is ChatMessage.SystemMessage -> {
                     SystemMessageItem(
@@ -110,15 +122,83 @@ fun SystemMessageItem(
     }
 }
 
+@Composable
+fun FunctionCallRequestMessageItem(
+    modifier: Modifier = Modifier,
+    message: ChatMessage.FunctionCallRequestMessage
+) {
+    Row(modifier, horizontalArrangement = Arrangement.Center) {
+        Text(message.message, Modifier.padding(12.dp))
+    }
+}
+
+
+@Composable
+fun FunctionCallResponseMessageItem(
+    modifier: Modifier = Modifier,
+    message: ChatMessage.FunctionCallResponseMessage
+) {
+    Row(modifier, horizontalArrangement = Arrangement.Center) {
+        Text(message.message, Modifier.padding(12.dp))
+    }
+}
+
 
 @Preview
 @Composable
 fun MessagesPreview() {
     ChatMessageList(
         messages = listOf(
-            ChatMessage.AssistantMessage(0, "你不要吓我"),
-            ChatMessage.HumanMessage(1, "你不要吓我"),
-            ChatMessage.SystemMessage(2, "你不要吓我")
+            ChatMessage.AssistantMessage(
+                0,
+                0,
+                0,
+                "你不要骗我",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            ),
+            ChatMessage.HumanMessage(
+                1,
+                0,
+                0,
+                "你不要吓我",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            ),
+            ChatMessage.SystemMessage(
+                2,
+                0,
+                0,
+                "推出了群聊",
+                0,
+                0,
+            ),
+            ChatMessage.FunctionCallRequestMessage(
+                3,
+                0,
+                0,
+                "Android Copilot Request GPS Location Access",
+                "",
+                "",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            ),
+            ChatMessage.FunctionCallResponseMessage(
+                4,
+                0,
+                0,
+                "You denied Location Access",
+                "",
+                "",
+                "",
+                0,
+                0,
+                ChatMessage.Status.StatusSuccess
+            )
+
         )
     )
 }
