@@ -34,7 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.ui.chat.conversation.ChatConversationViewModel
-import com.example.androidcopilot.chat.model.ChatMessage
+import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawerSheet
 import com.example.androidcopilot.ui.chat.input.MixedMessageInput
 import kotlinx.coroutines.launch
@@ -99,7 +99,7 @@ fun ChatMessageScreen(
 @Composable
 fun ChatMessageList(
     modifier: Modifier = Modifier,
-    messages: List<ChatMessage> = emptyList(),
+    messages: List<Message> = emptyList(),
 ) {
 
     LazyColumn(modifier,
@@ -109,33 +109,33 @@ fun ChatMessageList(
             messages[it]::class.simpleName
         }) {
             when (val message = messages[it]) {
-                is ChatMessage.HumanMessage -> {
+                is Message.HumanMessage -> {
                     HumanMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
 
                 }
-                is ChatMessage.AssistantMessage -> {
+                is Message.AssistantMessage -> {
                     AssistantMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
 
                 }
-                is ChatMessage.FunctionCallRequestMessage -> {
+                is Message.FunctionCallRequestMessage -> {
                     FunctionCallRequestMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
                 }
-                is ChatMessage.FunctionCallResponseMessage -> {
+                is Message.FunctionCallResponseMessage -> {
                     FunctionCallResponseMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
                 }
-                is ChatMessage.SystemMessage -> {
+                is Message.SystemMessage -> {
                     SystemMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
@@ -149,7 +149,7 @@ fun ChatMessageList(
 @Composable
 fun AssistantMessageItem(
     modifier: Modifier = Modifier,
-    message: ChatMessage.AssistantMessage
+    message: Message.AssistantMessage
 ) {
     Row(modifier) {
         Card(modifier =
@@ -171,7 +171,7 @@ fun AssistantMessageItem(
 @Composable
 fun HumanMessageItem(
     modifier: Modifier = Modifier,
-    message: ChatMessage.HumanMessage
+    message: Message.HumanMessage
 ) {
     Row(modifier, horizontalArrangement = Arrangement.End) {
         Card(modifier = Modifier
@@ -191,7 +191,7 @@ fun HumanMessageItem(
 @Composable
 fun SystemMessageItem(
     modifier: Modifier = Modifier,
-    message: ChatMessage.SystemMessage
+    message: Message.SystemMessage
 ) {
     Row(modifier, horizontalArrangement = Arrangement.Center) {
         Text(message.message, Modifier.padding(12.dp))
@@ -201,7 +201,7 @@ fun SystemMessageItem(
 @Composable
 fun FunctionCallRequestMessageItem(
     modifier: Modifier = Modifier,
-    message: ChatMessage.FunctionCallRequestMessage
+    message: Message.FunctionCallRequestMessage
 ) {
     Row(modifier, horizontalArrangement = Arrangement.Center) {
         Text(message.message, Modifier.padding(12.dp))
@@ -212,7 +212,7 @@ fun FunctionCallRequestMessageItem(
 @Composable
 fun FunctionCallResponseMessageItem(
     modifier: Modifier = Modifier,
-    message: ChatMessage.FunctionCallResponseMessage
+    message: Message.FunctionCallResponseMessage
 ) {
     Row(modifier, horizontalArrangement = Arrangement.Center) {
         Text(message.message, Modifier.padding(12.dp))
@@ -225,25 +225,25 @@ fun FunctionCallResponseMessageItem(
 fun MessagesPreview() {
     ChatMessageList(
         messages = listOf(
-            ChatMessage.AssistantMessage(
+            Message.AssistantMessage(
                 0,
                 0,
                 0,
                 "你不要骗我",
                 0,
                 0,
-                ChatMessage.Status.StatusSuccess
+                Message.Status.StatusSuccess
             ),
-            ChatMessage.HumanMessage(
+            Message.HumanMessage(
                 1,
                 0,
                 0,
                 "你不要吓我",
                 0,
                 0,
-                ChatMessage.Status.StatusSuccess
+                Message.Status.StatusSuccess
             ),
-            ChatMessage.SystemMessage(
+            Message.SystemMessage(
                 2,
                 0,
                 0,
@@ -251,7 +251,7 @@ fun MessagesPreview() {
                 0,
                 0,
             ),
-            ChatMessage.FunctionCallRequestMessage(
+            Message.FunctionCallRequestMessage(
                 3,
                 0,
                 0,
@@ -260,9 +260,9 @@ fun MessagesPreview() {
                 "",
                 0,
                 0,
-                ChatMessage.Status.StatusSuccess
+                Message.Status.StatusSuccess
             ),
-            ChatMessage.FunctionCallResponseMessage(
+            Message.FunctionCallResponseMessage(
                 4,
                 0,
                 0,
@@ -272,7 +272,7 @@ fun MessagesPreview() {
                 "",
                 0,
                 0,
-                ChatMessage.Status.StatusSuccess
+                Message.Status.StatusSuccess
             )
 
         )

@@ -3,7 +3,7 @@ package com.example.androidcopilot.chat.repository.local
 import androidx.paging.PagingSource
 import com.example.androidcopilot.chat.model.ChatAttachment
 import com.example.androidcopilot.chat.model.ChatConversation
-import com.example.androidcopilot.chat.model.ChatMessage
+import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.chat.repository.ChatRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -21,9 +21,9 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.conversationFlow(id)
     }
 
-    override suspend fun newConversation(conversation: ChatConversation): ChatConversation? {
+    override suspend fun newConversation(conversation: ChatConversation): ChatConversation {
         val id = roomChatDao.newConversation(conversation)
-        return roomChatDao.findConversationById(id)
+        return roomChatDao.findConversationById(id)!!
     }
 
     override suspend fun deleteConversation(conversation: ChatConversation): ChatConversation? {
@@ -41,7 +41,7 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.findConversationById(id)
     }
 
-    override fun messageListFlow(conversation: ChatConversation): Flow<List<ChatMessage>> {
+    override fun messageListFlow(conversation: ChatConversation): Flow<List<Message>> {
         return roomChatDao.conversationMessageFlow(conversation.id, 0, Int.MAX_VALUE)
     }
 
@@ -49,27 +49,27 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         conversation: ChatConversation,
         offset: Int,
         limit: Int
-    ): List<ChatMessage> {
+    ): List<Message> {
         return roomChatDao.findConversationMessages(conversation.id, 0, Int.MAX_VALUE)
     }
 
-    override suspend fun newMessage(message: ChatMessage): ChatMessage? {
+    override suspend fun newMessage(message: Message): Message {
         val id = roomChatDao.newMessage(message)
-        return roomChatDao.findMessage(id)
+        return roomChatDao.findMessage(id)!!
     }
 
-    override suspend fun updateMessage(message: ChatMessage): ChatMessage? {
+    override suspend fun updateMessage(message: Message): Message? {
         roomChatDao.updateMessage(message)
         return roomChatDao.findMessage(message.id)
     }
 
-    override suspend fun deleteMessage(message: ChatMessage): ChatMessage? {
+    override suspend fun deleteMessage(message: Message): Message? {
         val deleted = roomChatDao.findMessage(message.id)
         roomChatDao.deleteMessage(message)
         return deleted
     }
 
-    override suspend fun findMessageById(id: Long): ChatMessage? {
+    override suspend fun findMessageById(id: Long): Message? {
         return roomChatDao.findMessage(id)
     }
 
@@ -101,7 +101,7 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.conversationPagingSource()
     }
 
-    override fun messagePagingSource(conversation: ChatConversation): PagingSource<Int, ChatMessage> {
+    override fun messagePagingSource(conversation: ChatConversation): PagingSource<Int, Message> {
         return roomChatDao.conversationMessagePagingSource(conversation.id)
     }
 }

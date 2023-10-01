@@ -4,13 +4,13 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.androidcopilot.chat.model.ChatAttachment
 import com.example.androidcopilot.chat.model.ChatConversation
-import com.example.androidcopilot.chat.model.ChatMessage
+import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.chat.repository.local.RoomChatDao
 
 
 @Database(
     entities = [
-        ChatMessage::class,
+        Message::class,
         ChatConversation::class,
         ChatAttachment::class
     ],

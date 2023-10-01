@@ -3,7 +3,7 @@ package com.example.androidcopilot.ui.chat.message
 import androidx.lifecycle.ViewModel
 import com.example.androidcopilot.chat.model.ChatAttachment
 import com.example.androidcopilot.chat.model.ChatConversation
-import com.example.androidcopilot.chat.model.ChatMessage
+import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.chat.input.InputMode
 import com.example.androidcopilot.ui.chat.input.MessageInputState
 import com.example.androidcopilot.ui.chat.input.SendState
@@ -23,7 +23,7 @@ class ChatMessageViewModel: ViewModel() {
         )
     )
 
-    val messages: MutableStateFlow<List<ChatMessage>> = MutableStateFlow(
+    val messages: MutableStateFlow<List<Message>> = MutableStateFlow(
         emptyList()
     )
 

@@ -13,13 +13,17 @@ import java.io.Serializable
 @Keep
 data class ChatConversation(
     @PrimaryKey(autoGenerate = true)
-    val id: Long,
+    val id: Long = 0,
     val title: String = "",
+    val model: String = "",
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
-    val createAt: Long,
+    val createAt: Long = 0,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
-    val updateAt: Long,
-    val messageCount: Long,
-    val tokenCount: Long,
+    val updateAt: Long = 0,
+    val messageCount: Int = 0,
+    val tokenCount: Long = 0,
+    val tokenLimit: Int = 3500,
+    val memoryOffset: Int = 0,
+    val memoryLimit: Int = 0
 ): Serializable, Parcelable
 

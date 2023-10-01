@@ -7,32 +7,30 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Relation
-import com.example.androidcopilot.chat.model.ChatMessage.MessageType.Companion.MESSAGE_TYPE_ASSISTANT
-import com.example.androidcopilot.chat.model.ChatMessage.MessageType.Companion.MESSAGE_TYPE_FUNCTION_CALL_REQUEST
-import com.example.androidcopilot.chat.model.ChatMessage.MessageType.Companion.MESSAGE_TYPE_FUNCTION_CALL_RESPONSE
-import com.example.androidcopilot.chat.model.ChatMessage.MessageType.Companion.MESSAGE_TYPE_HUMAN
-import com.example.androidcopilot.chat.model.ChatMessage.MessageType.Companion.MESSAGE_TYPE_SYSTEM
+import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_ASSISTANT
+import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_FUNCTION_CALL_REQUEST
+import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_FUNCTION_CALL_RESPONSE
+import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_HUMAN
+import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_SYSTEM
 import kotlinx.parcelize.Parcelize
 import java.io.Serializable
 
 @Entity
 @Parcelize
 @Keep
-data class ChatMessage(
+data class Message(
     @PrimaryKey(autoGenerate = true)
-    val id: Long,
-    val parent: Long,
-    val child: Long,
+    val id: Long = 0,
+    val parent: Long = 0,
+    val child: Long = 0,
     val conversation: Long,
-    val messageType: Int,
     @MessageType
     val type: Int,
-    val status: Status,
-    val message: String,
+    val content: String,
+    val status: Status = Status.StatusRequesting,
     val token: Int = 0,
     val functionName: String? = null,
     val functionArgs: String? = null,
-    val functionResponse: String? = null,
     @Relation(
         parentColumn = "id",
         entityColumn = "messageId"
@@ -47,6 +45,10 @@ data class ChatMessage(
 
     @Keep
     sealed interface Status: Serializable, Parcelable {
+
+        @Parcelize
+        @Keep
+        object StatusPending: Status
 
         @Parcelize
         @Keep

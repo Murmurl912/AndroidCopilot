@@ -8,7 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.androidcopilot.chat.model.ChatAttachment
 import com.example.androidcopilot.chat.model.ChatConversation
-import com.example.androidcopilot.chat.model.ChatMessage
+import com.example.androidcopilot.chat.model.Message
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -36,31 +36,31 @@ interface RoomChatDao {
     suspend fun findConversations(offset: Int, limit: Int): List<ChatConversation>
 
     @Insert
-    suspend fun newMessage(chatMessage: ChatMessage): Long
+    suspend fun newMessage(message: Message): Long
 
     @Delete
-    suspend fun deleteMessage(chatMessage: ChatMessage): Int
+    suspend fun deleteMessage(message: Message): Int
 
     @Update
-    suspend fun updateMessage(chatMessage: ChatMessage): Int
+    suspend fun updateMessage(message: Message): Int
 
     @Query(
-        "select * from ChatMessage " +
+        "select * from Message " +
             "where conversation =:conversation " +
             "order by createAt desc " +
             "limit :limit offset :offset")
-    suspend fun findConversationMessages(conversation: Long, offset: Int, limit: Int): List<ChatMessage>
+    suspend fun findConversationMessages(conversation: Long, offset: Int, limit: Int): List<Message>
 
 
     @Query(
-        "select * from ChatMessage " +
+        "select * from Message " +
             "where conversation =:conversation " +
             "order by createAt desc " +
             "limit :limit offset :offset")
-    fun conversationMessageFlow(conversation: Long, offset: Int, limit: Int): Flow<List<ChatMessage>>
+    fun conversationMessageFlow(conversation: Long, offset: Int, limit: Int): Flow<List<Message>>
 
-    @Query("select * from ChatMessage where id = :id")
-    fun findMessage(id: Long): ChatMessage?
+    @Query("select * from Message where id = :id")
+    fun findMessage(id: Long): Message?
 
 
     @Insert
@@ -81,6 +81,6 @@ interface RoomChatDao {
     @Query("select * from ChatConversation order by updateAt desc")
     fun conversationPagingSource(): PagingSource<Int, ChatConversation>
 
-    @Query("select * from ChatMessage where conversation = :id order by createAt desc")
-    fun conversationMessagePagingSource(id: Long): PagingSource<Int, ChatMessage>
+    @Query("select * from Message where conversation = :id order by createAt desc")
+    fun conversationMessagePagingSource(id: Long): PagingSource<Int, Message>
 }

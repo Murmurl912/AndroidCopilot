@@ -1,15 +1,22 @@
 package com.example.androidcopilot.chat
 
 import com.example.androidcopilot.chat.model.ChatConversation
-import com.example.androidcopilot.chat.model.ChatMessage
+import com.example.androidcopilot.chat.model.Message
 import kotlinx.coroutines.flow.Flow
 
 interface ChatClient {
 
-    suspend fun send(message: ChatMessage): Flow<ChatMessage>
+    suspend fun newConversation(): Result<ChatConversation>
 
-    fun messages(): Flow<List<ChatMessage>>
+    suspend fun updateConversation(conversation: ChatConversation): Result<ChatConversation>
 
-    fun conversation(): Flow<ChatConversation>
+    suspend fun deleteConversation(conversation: ChatConversation): Result<ChatConversation>
 
+    suspend fun send(message: Message): Flow<Message>
+
+    fun messages(): Flow<List<Message>>
+
+    fun conversations(): Flow<List<ChatConversation>>
+
+    fun watchConversation(conversationId: Long): Flow<ChatConversation>
 }
