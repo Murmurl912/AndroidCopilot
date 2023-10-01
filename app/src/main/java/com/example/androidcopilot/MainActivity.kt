@@ -28,7 +28,6 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val viewModel: ChatMessageViewModel by viewModels()
                     ChatConversationScreen(
-                        Modifier.fillMaxWidth().systemBarsPadding(),
                         viewModel
                     )
                 }

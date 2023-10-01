@@ -53,7 +53,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
-import com.example.androidcopilot.keyboard.KeyboardHeights
+import com.example.androidcopilot.ui.keyboard.KeyboardHeights
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -62,7 +62,7 @@ import kotlinx.coroutines.android.awaitFrame
 
 
 enum class SendState {
-    StateSend,
+    StateIdle,
     StateSending,
     StateError,
     StatePause,
@@ -74,17 +74,36 @@ enum class InputMode {
     PickAttachment,
 }
 
+data class MessageInputState(
+    val input: String,
+    val mode: InputMode,
+    val sendState: SendState,
+    val attachments: List<Attachment>,
+)
+
+
+data class Attachment(
+    var name: String? = null,
+    var url: String? = null,
+    var mimeType: String? = null,
+    var fileSize: Int = 0,
+    var title: String? = null,
+    var text: String? = null,
+    var type: String? = null,
+    var image: String? = null,
+)
+
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun MixedMessageInput(
     modifier: Modifier = Modifier,
-    inputText: String = "",
-    inputHint: String = "Ask me anything",
-    inputMode: InputMode = InputMode.TextInput,
-    sendState: SendState = SendState.StateSend,
-    onChangeInputMode: (InputMode) -> Unit = {},
-    onInputTextChange: (String) -> Unit = {},
-    onSend: () -> Unit = {},
+    state: MessageInputState,
+    label: @Composable () -> Unit = {
+        Text("Ask me anything", color = MaterialTheme.colorScheme.onSurface.copy(0.3F))
+    },
+    onModeChange: (InputMode) -> Unit = {},
+    onInputChange: (String) -> Unit = {},
+    onSendMessage: (String, List<Attachment>) -> Unit = { _, _ -> },
     onPause: () -> Unit = {},
     onRetry: () -> Unit = {},
     onResume: () -> Unit = {},
@@ -106,10 +125,10 @@ fun MixedMessageInput(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                if (inputMode == InputMode.PickAttachment) {
+                if (state.mode == InputMode.PickAttachment) {
                     IconButton(
                         onClick = {
-                            onChangeInputMode(InputMode.TextInput)
+                            onModeChange(InputMode.TextInput)
                             keyboardController?.show()
                         },
                         modifier = Modifier
@@ -124,7 +143,7 @@ fun MixedMessageInput(
                 } else {
                     IconButton(
                         onClick = {
-                            onChangeInputMode(InputMode.PickAttachment)
+                            onModeChange(InputMode.PickAttachment)
                         },
                         modifier = Modifier
                             .align(Alignment.Bottom)
@@ -142,22 +161,21 @@ fun MixedMessageInput(
                 }
 
                 BasicTextField(
-                    value = inputText,
-                    onValueChange = onInputTextChange,
+                    value = state.input,
+                    onValueChange = onInputChange,
                     modifier = Modifier
                         .weight(1F)
                         .defaultMinSize(40.dp),
                     maxLines = 3,
                     interactionSource = source
                 ) {
-                    if (inputText.isEmpty()) {
-                        Text(inputHint,
-                            color = MaterialTheme.colorScheme.onSurface.copy(0.6F))
+                    if (state.input.isEmpty()) {
+                        label()
                     }
                 }
                 IconButton(
                     onClick = {
-                        onChangeInputMode(InputMode.VoiceInput)
+                        onModeChange(InputMode.VoiceInput)
                     },
                     modifier = Modifier
                         .align(Alignment.Bottom)
@@ -171,23 +189,25 @@ fun MixedMessageInput(
                 val isPressed by source.collectIsPressedAsState()
                 LaunchedEffect(isPressed) {
                     if (isPressed) {
-                        onChangeInputMode(InputMode.TextInput)
+                        onModeChange(InputMode.TextInput)
                         keyboardController?.show()
                     }
                 }
             }
 
             Spacer(Modifier.width(12.dp))
-            when (sendState) {
-                SendState.StateSend -> {
+            when (state.sendState) {
+                SendState.StateIdle -> {
                     IconButton(
-                        onClick = onSend,
+                        onClick = {
+                            onSendMessage(state.input, state.attachments)
+                                  },
                         modifier = Modifier
                             .align(Alignment.Bottom)
                             .size(40.dp)
                             .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
                             .clip(CircleShape),
-                        enabled = inputText.isNotEmpty()
+                        enabled = state.input.isNotEmpty()
                     ) {
                         Icon(
                             Icons.Default.Send,
@@ -210,7 +230,7 @@ fun MixedMessageInput(
                     }
                 }
                 SendState.StatePause -> {
-                    if (inputText.isEmpty()) {
+                    if (state.input.isEmpty()) {
                         IconButton(
                             onClick = onResume,
                             modifier = Modifier
@@ -221,7 +241,7 @@ fun MixedMessageInput(
                                     CircleShape
                                 )
                                 .clip(CircleShape),
-                            enabled = inputText.isNotEmpty()
+                            enabled = state.input.isNotEmpty()
                         ) {
                             Icon(
                                 Icons.Default.PlayArrow,
@@ -231,12 +251,14 @@ fun MixedMessageInput(
                         }
                     } else {
                         IconButton(
-                            onClick = onSend,
+                            onClick = {
+                                      onSendMessage(state.input, state.attachments)
+                                      },
                             modifier = Modifier
                                 .align(Alignment.Bottom)
                                 .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
                                 .clip(CircleShape),
-                            enabled = inputText.isNotEmpty()
+                            enabled = state.input.isNotEmpty()
                         ) {
                             Icon(
                                 Icons.Default.Send,
@@ -247,7 +269,7 @@ fun MixedMessageInput(
                     }
                 }
                 SendState.StateError -> {
-                    if (inputText.isEmpty()) {
+                    if (state.input.isEmpty()) {
                         IconButton(onClick = onRetry,
                             modifier = Modifier
                                 .size(40.dp)
@@ -260,7 +282,10 @@ fun MixedMessageInput(
                             Icon(Icons.Default.Refresh, contentDescription = "")
                         }
                     } else {
-                        IconButton(onClick = onSend,
+                        IconButton(
+                            onClick = {
+                                      onSendMessage(state.input, state.attachments)
+                                      },
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(
@@ -268,7 +293,7 @@ fun MixedMessageInput(
                                     CircleShape
                                 )
                                 .clip(CircleShape),
-                            ) {
+                        ) {
                             Icon(Icons.Default.Send, contentDescription = "")
                         }
                     }
@@ -291,8 +316,8 @@ fun MixedMessageInput(
         }
         val (imeState, imeMaxHeight) = KeyboardHeights.rememberKeyboardHeight()
         println("ime state: $imeState $imeMaxHeight $imeHeight")
-        val expectedPanelHeight = remember(inputMode, imeHeight, systemHeight, imeState, imeMaxHeight) {
-            when (inputMode) {
+        val expectedPanelHeight = remember(state.mode, imeHeight, systemHeight, imeState, imeMaxHeight) {
+            when (state.mode) {
                 InputMode.TextInput -> {
                     when (imeState) {
                         KeyboardHeights.ImeState.ImeShown -> {
@@ -323,7 +348,6 @@ fun MixedMessageInput(
                 }
             }
         }
-        println("expected height: ${expectedPanelHeight}")
         Box(modifier = Modifier
             .onSizeChanged {
                 with(density) {
@@ -332,10 +356,9 @@ fun MixedMessageInput(
             }
             .height(expectedPanelHeight)
         ) {
-            when (inputMode) {
+            when (state.mode) {
                 InputMode.VoiceInput -> {
                     LaunchedEffect(Unit) {
-                        println("hide ime")
                         awaitFrame()
                         keyboardController?.hide()
                     }
@@ -372,7 +395,7 @@ fun MixedMessageInput(
 
                         Spacer(modifier = Modifier.weight(1F))
                         IconButton(onClick = {
-                            onChangeInputMode(InputMode.TextInput)
+                            onModeChange(InputMode.TextInput)
                             keyboardController?.show()
                         }) {
                             Icon(Icons.Default.KeyboardAlt, contentDescription = "")
@@ -399,6 +422,12 @@ fun MixedMessageInput(
 @Composable
 fun MixedMessageInputPreivew() {
    Column {
-       MixedMessageInput()
+       val state  by remember {
+           mutableStateOf(MessageInputState(
+               "", InputMode.TextInput, SendState.StateIdle, emptyList()))
+       }
+       MixedMessageInput(
+           state = state
+       )
    }
 }

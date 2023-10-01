@@ -4,8 +4,7 @@ import com.example.androidcopilot.chat.model.ChatMessage
 
 interface ChatAgent {
 
-    fun send(message: ChatMessage.HumanMessage)
-
+    suspend fun send(message: ChatMessage.HumanMessage): ChatMessage
 
 
 }
