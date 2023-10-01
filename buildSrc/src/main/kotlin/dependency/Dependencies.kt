@@ -1,5 +1,6 @@
 package dependency
 
+
 object Dependencies {
 
     const val Moshi = "com.squareup.moshi:moshi:${Versions.Mosi}"
@@ -44,4 +45,15 @@ object Dependencies {
     const val AndroidXStartup = "androidx.startup:startup-runtime:${Versions.AndroidXStartup}"
 
     const val AccompanistPermission = "com.google.accompanist:accompanist-permissions:${Versions.AccompanistPermission}"
+
+    const val NavigationCompose = "androidx.navigation:navigation-compose:${Versions.NavigationCompose}"
+
+    const val RoomRuntime = "androidx.room:room-runtime:${Versions.Room}"
+    const val RoomCompiler = "androidx.room:room-compiler:${Versions.Room}"
+    const val RoomKtx = "androidx.room:room-ktx:${Versions.Room}"
+    const val RoomPaging = "androidx.room:room-paging:${Versions.Room}"
+
+    const val AndroidHlit = "com.google.dagger:hilt-android:${Versions.Hlit}"
+    const val AndroidHlitCompiler = "com.google.dagger:hilt-android-compiler:${Versions.Hlit}"
+
 }

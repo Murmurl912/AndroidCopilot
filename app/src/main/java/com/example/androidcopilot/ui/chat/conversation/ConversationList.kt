@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.chat
+package com.example.androidcopilot.ui.chat.conversation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,17 +13,37 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.chat.model.ChatConversation
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConversationListDrawerSheet(
+    modifier: Modifier = Modifier,
+    conversationViewModel: ChatConversationViewModel
+) {
+    val conversation by conversationViewModel.currentConversation.collectAsState()
+    val conversations by conversationViewModel.conversations.collectAsState()
+    ModalDrawerSheet(modifier) {
+        ConversationList(
+            conversation = conversation,
+            conversations = conversations,
+            onClickConversation = conversationViewModel::onSwitchConversation,
+            onNewConversation = conversationViewModel::onNewConversation
+        )
+    }
+}
 
 @Composable
 fun ConversationList(
     modifier: Modifier = Modifier,
     conversation: ChatConversation? = null,
     conversations: List<ChatConversation> = emptyList(),
-    onClick: (ChatConversation) -> Unit = {},
+    onClickConversation: (ChatConversation) -> Unit = {},
     onNewConversation: () -> Unit = {}
 ) {
 
@@ -39,7 +59,7 @@ fun ConversationList(
             ConversationItem(Modifier,
                 item,
                 item == conversation) {
-                onClick(item)
+                onClickConversation(item)
             }
         }
     }

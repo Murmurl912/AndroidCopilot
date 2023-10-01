@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.chat
+package com.example.androidcopilot.ui.chat.input
 
 import android.Manifest
 import androidx.compose.foundation.background
@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
+import com.example.androidcopilot.chat.model.ChatAttachment
 import com.example.androidcopilot.ui.keyboard.KeyboardHeights
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -78,19 +79,7 @@ data class MessageInputState(
     val input: String,
     val mode: InputMode,
     val sendState: SendState,
-    val attachments: List<Attachment>,
-)
-
-
-data class Attachment(
-    var name: String? = null,
-    var url: String? = null,
-    var mimeType: String? = null,
-    var fileSize: Int = 0,
-    var title: String? = null,
-    var text: String? = null,
-    var type: String? = null,
-    var image: String? = null,
+    val attachments: List<ChatAttachment>,
 )
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalPermissionsApi::class)
@@ -103,7 +92,7 @@ fun MixedMessageInput(
     },
     onModeChange: (InputMode) -> Unit = {},
     onInputChange: (String) -> Unit = {},
-    onSendMessage: (String, List<Attachment>) -> Unit = { _, _ -> },
+    onSendMessage: (String, List<ChatAttachment>) -> Unit = { _, _ -> },
     onPause: () -> Unit = {},
     onRetry: () -> Unit = {},
     onResume: () -> Unit = {},
@@ -423,8 +412,10 @@ fun MixedMessageInput(
 fun MixedMessageInputPreivew() {
    Column {
        val state  by remember {
-           mutableStateOf(MessageInputState(
-               "", InputMode.TextInput, SendState.StateIdle, emptyList()))
+           mutableStateOf(
+               MessageInputState(
+               "", InputMode.TextInput, SendState.StateIdle, emptyList())
+           )
        }
        MixedMessageInput(
            state = state

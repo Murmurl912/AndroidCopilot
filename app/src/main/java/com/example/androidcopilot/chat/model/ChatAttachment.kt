@@ -11,15 +11,18 @@ import java.io.Serializable
 @Entity
 @Parcelize
 @Keep
-data class ChatConversation(
+data class ChatAttachment(
     @PrimaryKey(autoGenerate = true)
     val id: Long,
-    val title: String = "",
+    val type: String,
+    val title: String? = null,
+    val name: String? = null,
+    val messageId: Long = 0,
+    val thumbnail: String? = null,
+    val contentUrl: String? = null,
+    val contentFile: Long = 0,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     val createAt: Long,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
-    val updateAt: Long,
-    val messageCount: Long,
-    val tokenCount: Long,
-): Serializable, Parcelable
-
+    val updateAt: Long
+) : Parcelable, Serializable

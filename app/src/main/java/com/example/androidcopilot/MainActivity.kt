@@ -11,27 +11,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import com.example.androidcopilot.chat.model.ChatMessageViewModel
-import com.example.androidcopilot.ui.chat.ChatConversationScreen
-import com.example.androidcopilot.ui.theme.AndroidCopilotTheme
+import com.example.androidcopilot.ui.AndroidCopilotMain
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            AndroidCopilotTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val viewModel: ChatMessageViewModel by viewModels()
-                    ChatConversationScreen(
-                        viewModel
-                    )
-                }
-            }
+           AndroidCopilotMain()
         }
     }
 }

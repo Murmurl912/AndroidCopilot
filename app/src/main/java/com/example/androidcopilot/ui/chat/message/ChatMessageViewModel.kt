@@ -1,19 +1,18 @@
-package com.example.androidcopilot.chat.model
+package com.example.androidcopilot.ui.chat.message
 
 import androidx.lifecycle.ViewModel
-import com.example.androidcopilot.ui.chat.Attachment
-import com.example.androidcopilot.ui.chat.InputMode
-import com.example.androidcopilot.ui.chat.MessageInputState
-import com.example.androidcopilot.ui.chat.SendState
+import com.example.androidcopilot.chat.model.ChatAttachment
+import com.example.androidcopilot.chat.model.ChatConversation
+import com.example.androidcopilot.chat.model.ChatMessage
+import com.example.androidcopilot.ui.chat.input.InputMode
+import com.example.androidcopilot.ui.chat.input.MessageInputState
+import com.example.androidcopilot.ui.chat.input.SendState
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class ChatMessageViewModel: ViewModel() {
 
-    val conversationList = MutableStateFlow<List<ChatConversation>>(
-        emptyList()
-    )
 
-    val conversation = MutableStateFlow(
+    val conversation: MutableStateFlow<ChatConversation> = MutableStateFlow(
         ChatConversation(
             0,
             "Android Copilot",
@@ -21,16 +20,10 @@ class ChatMessageViewModel: ViewModel() {
             0,
             0,
             0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
         )
     )
-    val messageList = MutableStateFlow<List<ChatMessage>>(
+
+    val messages: MutableStateFlow<List<ChatMessage>> = MutableStateFlow(
         emptyList()
     )
 
@@ -47,7 +40,7 @@ class ChatMessageViewModel: ViewModel() {
 
     }
 
-    fun send(message: String, attachments: List<Attachment>) {
+    fun send(message: String, attachments: List<ChatAttachment>) {
 
     }
 

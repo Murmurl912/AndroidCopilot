@@ -5,6 +5,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     kotlin("kapt")
+    id("kotlin-parcelize")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -80,6 +82,19 @@ dependencies {
 
     implementation(Dependencies.AndroidXStartup)
     implementation(Dependencies.AccompanistPermission)
+    implementation(Dependencies.NavigationCompose)
+
+    implementation(Dependencies.RoomRuntime)
+    implementation(Dependencies.RoomKtx)
+    implementation(Dependencies.RoomPaging)
+    annotationProcessor(Dependencies.RoomCompiler)
+    kapt(Dependencies.RoomCompiler)
+
+
+    implementation(Dependencies.AndroidHlit)
+    kapt(Dependencies.HiltAndroidCompiler)
+
+    implementation(Dependencies.AallamOpenAi)
 
     testImplementation(Dependencies.Junit)
     androidTestImplementation(Dependencies.AndroidxTestExtJunit)

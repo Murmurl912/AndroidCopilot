@@ -1,6 +1,7 @@
 package dependency
 
 object Versions {
+    const val NavigationCompose = "2.6.0"
     const val Mosi = "1.14.0"
     const val Retrofit = "2.9.0"
     const val AndroidXCoreKtx = "1.9.0"
@@ -16,4 +17,6 @@ object Versions {
     const val ComposeAudiowaveForm = "1.1.1"
     const val AndroidXStartup = "1.1.1"
     const val AccompanistPermission = "0.30.1"
+    const val Room = "2.5.2"
+    const val Hlit = "2.44"
 }
