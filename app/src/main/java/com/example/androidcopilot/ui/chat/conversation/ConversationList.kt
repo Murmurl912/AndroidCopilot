@@ -113,47 +113,14 @@ fun ConversationItemPreview() {
         Conversation(
             0,
             "How to make money",
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
         ),
         Conversation(
             1,
             "How to make money",
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
         ),
         Conversation(
             2,
             "How to be rich",
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
         ),
     )
 

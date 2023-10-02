@@ -9,6 +9,18 @@ import kotlinx.coroutines.flow.Flow
 
 class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository {
 
+    override suspend fun tryLockConversation(conversationId: Long): Conversation? {
+        return roomChatDao.tryLockConversation(conversationId)
+    }
+
+    override suspend fun unlockConversation(conversationId: Long) {
+        roomChatDao.unlockConversation(conversationId)
+    }
+
+    override suspend fun trimMemoryOffset(conversationId: Long): Conversation? {
+        return roomChatDao.trimMemoryOffset(conversationId)
+    }
+
     override fun conversationListFlow(): Flow<List<Conversation>> {
         return roomChatDao.conversationsFlow()
     }

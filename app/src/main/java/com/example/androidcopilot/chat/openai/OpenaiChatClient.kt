@@ -15,203 +15,170 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicReference
 
 class OpenaiChatClient(
     private val openai: OpenAI,
     private val chatRepository: ChatRepository,
-    private val scope: CoroutineScope
 ): ChatClient {
 
-    override suspend fun newConversation(): Result<Conversation> {
-        return kotlin.runCatching {
-            chatRepository.newConversation(
-                Conversation()
-            )
-        }
-    }
 
-    override suspend fun updateConversation(conversation: Conversation): Result<Conversation> {
-        return kotlin.runCatching {
-            chatRepository.updateConversation(conversation)!!
-        }
-    }
-
-    override suspend fun deleteConversation(conversation: Conversation): Result<Conversation> {
-        return kotlin.runCatching {
-            chatRepository.deleteConversation(conversation)!!
-        }
-    }
-
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun send(
         message: Message
     ): Flow<Message> {
-        callbackFlow {
-
-
-            val conversation = chatRepository.findConversationById(message.conversation)
-            val sendMessage = chatRepository.newMessage(message.copy(id = 0,
-                conversation = conversation.id,
-                parent = conversation.latestMessageId,
-                createAt = System.currentTimeMillis(),
-                updateAt = System.currentTimeMillis(),
-                status = Message.Status.StatusPending
-            ))
-            val messages = chatRepository.messages(
-                conversation,
-                conversation.memoryOffset,
-                conversation.memoryLimit
-            )
-            send(sendMessage, conversation, messages)
-            awaitClose {
-                //
-            }
+        return flow {
+            emit(sendMessage(message))
+        }.flatMapConcat {
+            it
         }
     }
 
-    private suspend fun send(
-        send: Message,
-        conversation: Conversation,
-        messages: List<Message>
-    ): Flow<Message> {
+    private suspend fun sendMessage(message: Message): Flow<Message> {
+        var conversation = chatRepository.findConversationById(message.conversation)
+            ?: throw IllegalStateException("Conversation: ${message.id} Not Found")
+
+        val memoryMessages = chatRepository.messages(
+            conversation,
+            0,
+            conversation.memoryMessageLimit
+        )
+        val memory = memoryMessages.filter {
+            it.status == Message.MessageStatus.StatusSuccess
+        }
+        val memoryTokens = memory.sumOf {
+            it.token
+        }
+
         val request = ChatCompletionRequest(
             ModelId(conversation.model),
-            messages = messages.mapNotNull(Message::toChatMessage)
+            messages = memory.mapNotNull(Message::toChatMessage)
         )
-        var sendMessage = send
-        var replyMessage = Message(
-            parent = sendMessage.id,
+        var send = message
+        var reply = Message(
+            parent = send.id,
             conversation = conversation.id,
             content = "",
-            type = Message.MessageType.MESSAGE_TYPE_ASSISTANT,
-            status = Message.Status.StatusPending
+            type = Message.MessageType.TypeAssistant,
+            status = Message.MessageStatus.StatusPending
         )
         return openai.chatCompletions(request)
             .map {
                 val delta = it.choices[0].delta
-                val status = when (it.choices[0].finishReason) {
+                val messageStatus = when (it.choices[0].finishReason) {
                     FinishReason.Stop -> {
-                        Message.Status.StatusSuccess
+                        Message.MessageStatus.StatusSuccess
                     }
                     FinishReason.Length -> {
-                        Message.Status.StatusSuccess
+                        Message.MessageStatus.StatusSuccess
                     }
                     FinishReason.FunctionCall -> {
-                        Message.Status.StatusSuccess
+                        Message.MessageStatus.StatusSuccess
                     }
                     else -> {
-                        Message.Status.StatusReceiving
+                        Message.MessageStatus.StatusReceiving
                     }
                 }
-                replyMessage = replyMessage.copy(
-                    content = replyMessage.content + delta.content,
+                val type = if (delta.functionCall != null) {
+                    Message.MessageType.TypeFunctionCallRequest
+                } else {
+                    Message.MessageType.TypeAssistant
+                }
+                reply = reply.copy(
+                    content = reply.content + delta.content,
                     functionName = delta.functionCall?.name,
                     functionArgs = delta.functionCall?.arguments,
                     updateAt = System.currentTimeMillis(),
                     token = it.usage?.completionTokens?:0,
-                    status = status
+                    status = messageStatus,
+                    type = type
                 )
-                if (replyMessage.id == 0L) {
-                    withContext(NonCancellable) {
-                        replyMessage = chatRepository.newMessage(replyMessage)
-                        sendMessage.copy(
-                            child = replyMessage.id,
-                            token = it.usage?.totalTokens?.let { count ->
-                                conversation.totalTokens + replyMessage.token - count
-                            } ?: 0,
-                            status = status
-                        )
-
-                    }
+                if (reply.id == 0L) {
+                    reply = chatRepository.newMessage(reply)
+                    send = send.copy(
+                        child = reply.id,
+                        token = it.usage?.totalTokens?.let { total ->
+                            total - memoryTokens - reply.token
+                        } ?: 0,
+                        status = messageStatus
+                    )
+                    chatRepository.updateMessage(send)
+                    chatRepository.updateConversation(
+                        conversation.copy(latestMessageId = reply.id).also {
+                            conversation = it
+                        }
+                    )
                 } else {
-                    chatRepository.updateMessage(replyMessage)
+                    chatRepository.updateMessage(reply)
                 }
-                replyMessage
+                reply
             }
             .onCompletion {
+                if (it is CancellationException) {
+                    // canceled
+                    send = send.copy(
+                        status = Message.MessageStatus.StatusStopped,
+                        updateAt = System.currentTimeMillis(),
+                        child = reply.id
+                    )
+                    reply = reply.copy(
+                        status = Message.MessageStatus.StatusStopped,
+                        updateAt = System.currentTimeMillis(),
+                    )
+                } else if (it != null) {
+                    // error
+                    send = send.copy(
+                        status = Message.MessageStatus.StatusError,
+                        updateAt = System.currentTimeMillis(),
+                        child = reply.id
+                    )
+                    reply = reply.copy(
+                        status = Message.MessageStatus.StatusError,
+                        updateAt = System.currentTimeMillis()
+                    )
+                } else {
+                    send = send.copy(
+                        status = Message.MessageStatus.StatusSuccess,
+                        updateAt = System.currentTimeMillis(),
+                        child = reply.id
+                    )
+                    reply = reply.copy(
+                        status = Message.MessageStatus.StatusSuccess,
+                        updateAt = System.currentTimeMillis()
+                    )
+                }
                 withContext(NonCancellable) {
-                    if (it is CancellationException) {
-                        // canceled
-                        sendMessage = sendMessage.copy(
-                            status = Message.Status.StatusStopped,
-                            updateAt = System.currentTimeMillis()
-                        )
-                        replyMessage = replyMessage.copy(
-                            status = Message.Status.StatusStopped,
-                            updateAt = System.currentTimeMillis()
-                        )
-                    } else if (it != null) {
-                        // error
-                        sendMessage = sendMessage.copy(
-                            status = Message.Status.StatusError,
-                            updateAt = System.currentTimeMillis()
-                        )
-                        replyMessage = replyMessage.copy(
-                            status = Message.Status.StatusError,
-                            updateAt = System.currentTimeMillis()
-                        )
-                    } else {
-                        sendMessage = sendMessage.copy(
-                            status = Message.Status.StatusSuccess,
-                            updateAt = System.currentTimeMillis()
-                        )
-                        replyMessage = replyMessage.copy(
-                            status = Message.Status.StatusSuccess,
-                            updateAt = System.currentTimeMillis()
-                        )
-                    }
-                    chatRepository.updateMessage(sendMessage)
-                    chatRepository.updateMessage(replyMessage)
-                    if (it == null) {
-                        conversation.copy(
-
-                        )
-
-                    }
+                    chatRepository.updateMessage(send)
+                    chatRepository.updateMessage(reply)
+                    chatRepository.trimMemoryOffset(conversation.id)
                 }
             }
             .catch {
 
             }
     }
-    private fun Message.ensureMessageValid() {
-        if (conversation == 0L) {
-            throw IllegalArgumentException("Conversation Is Required")
-        }
-        if (type !in intArrayOf(
-            Message.MessageType.MESSAGE_TYPE_HUMAN,
-            Message.MessageType.MESSAGE_TYPE_FUNCTION_CALL_RESPONSE
-        )) {
-            throw IllegalArgumentException("Message Type: $type Cannot be send")
-        }
-    }
+
 
     override fun messages(conversation: Conversation): Flow<List<Message>> {
-        TODO("Not yet implemented")
+        return chatRepository.messageListFlow(conversation)
     }
 
     override fun conversations(): Flow<List<Conversation>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun conversation(conversationId: Long): Flow<Conversation> {
-        TODO("Not yet implemented")
+        return chatRepository.conversationListFlow()
     }
 
 }
 
 private fun Message.toChatMessage(): ChatMessage? {
     return when (type) {
-        Message.MessageType.MESSAGE_TYPE_ASSISTANT -> {
+        Message.MessageType.TypeAssistant -> {
             ChatMessage(
                 ChatRole.Assistant,
                 content,
@@ -219,7 +186,7 @@ private fun Message.toChatMessage(): ChatMessage? {
                 null
             )
         }
-        Message.MessageType.MESSAGE_TYPE_HUMAN -> {
+        Message.MessageType.TypeHuman -> {
             ChatMessage(
                 ChatRole.User,
                 content,
@@ -227,7 +194,7 @@ private fun Message.toChatMessage(): ChatMessage? {
                 null
             )
         }
-        Message.MessageType.MESSAGE_TYPE_SYSTEM -> {
+        Message.MessageType.TypeSystem -> {
             ChatMessage(
                 ChatRole.System,
                 content,
@@ -235,7 +202,7 @@ private fun Message.toChatMessage(): ChatMessage? {
                 null
             )
         }
-        Message.MessageType.MESSAGE_TYPE_FUNCTION_CALL_REQUEST -> {
+        Message.MessageType.TypeFunctionCallRequest -> {
             ChatMessage(
                 ChatRole.Assistant,
                 functionCall = FunctionCall(
@@ -245,7 +212,7 @@ private fun Message.toChatMessage(): ChatMessage? {
             )
         }
 
-        Message.MessageType.MESSAGE_TYPE_FUNCTION_CALL_RESPONSE -> {
+        Message.MessageType.TypeFunctionCallResponse -> {
             ChatMessage(
                 ChatRole.Function,
                 content,

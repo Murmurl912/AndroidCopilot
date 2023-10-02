@@ -8,6 +8,12 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
 
+    suspend fun tryLockConversation(conversationId: Long): Conversation?
+
+    suspend fun unlockConversation(conversationId: Long)
+
+    suspend fun trimMemoryOffset(conversationId: Long): Conversation?
+
     fun conversationListFlow(): Flow<List<Conversation>>
 
     suspend fun conversations(offset: Int, limit: Int): List<Conversation>
@@ -20,7 +26,7 @@ interface ChatRepository {
 
     suspend fun updateConversation(conversation: Conversation): Conversation?
 
-    suspend fun findConversationById(id: Long): Conversation
+    suspend fun findConversationById(id: Long): Conversation?
 
     fun messageListFlow(conversation: Conversation): Flow<List<Message>>
 
@@ -47,4 +53,5 @@ interface ChatRepository {
     fun conversationPagingSource(): PagingSource<Int, Conversation>
 
     fun messagePagingSource(conversation: Conversation): PagingSource<Int, Message>
+
 }

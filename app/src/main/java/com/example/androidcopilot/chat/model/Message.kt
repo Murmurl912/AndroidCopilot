@@ -1,19 +1,12 @@
 package com.example.androidcopilot.chat.model
 
 import android.os.Parcelable
-import androidx.annotation.IntDef
 import androidx.annotation.Keep
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Relation
-import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_ASSISTANT
-import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_FUNCTION_CALL_REQUEST
-import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_FUNCTION_CALL_RESPONSE
-import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_HUMAN
-import com.example.androidcopilot.chat.model.Message.MessageType.Companion.MESSAGE_TYPE_SYSTEM
 import kotlinx.parcelize.Parcelize
-import java.io.Serializable
 
 @Entity
 @Parcelize
@@ -24,10 +17,9 @@ data class Message(
     val parent: Long = 0,
     val child: Long = 0,
     val conversation: Long,
-    @MessageType
-    val type: Int,
+    val type: MessageType,
     val content: String,
-    val status: Status = Status.StatusRequesting,
+    val status: MessageStatus = MessageStatus.StatusRequesting,
     val token: Int = 0,
     val functionName: String? = null,
     val functionArgs: String? = null,
@@ -42,52 +34,26 @@ data class Message(
     val updateAt: Long = 0,
 ) : Parcelable {
 
+    enum class MessageStatus {
+        StatusPending,
 
-    @Keep
-    sealed interface Status: Serializable, Parcelable {
+        StatusSuccess,
 
-        @Parcelize
-        @Keep
-        object StatusPending: Status
+        StatusRequesting,
 
-        @Parcelize
-        @Keep
-        object StatusSuccess: Status
+        StatusReceiving,
 
-        @Parcelize
-        @Keep
-        object StatusRequesting: Status
+        StatusStopped,
 
-        @Parcelize
-        @Keep
-        object StatusReceiving: Status
-
-        @Parcelize
-        @Keep
-        object StatusExecuteFunction: Status
-
-        @Parcelize
-        @Keep
-        object StatusStopped: Status
-
-        @Parcelize
-        @Keep
-        object StatusError: Status
+        StatusError,
     }
 
-    @IntDef(MESSAGE_TYPE_HUMAN,
-        MESSAGE_TYPE_ASSISTANT,
-        MESSAGE_TYPE_SYSTEM,
-        MESSAGE_TYPE_FUNCTION_CALL_REQUEST,
-        MESSAGE_TYPE_FUNCTION_CALL_RESPONSE
-    )
-    annotation class MessageType {
-        companion object {
-            const val MESSAGE_TYPE_HUMAN = 1
-            const val MESSAGE_TYPE_ASSISTANT = 2
-            const val MESSAGE_TYPE_SYSTEM = 3
-            const val MESSAGE_TYPE_FUNCTION_CALL_REQUEST = 4
-            const val MESSAGE_TYPE_FUNCTION_CALL_RESPONSE = 5
-        }
+    enum class MessageType {
+        TypeAssistant,
+        TypeFunctionCallRequest,
+        TypeFunctionCallResponse,
+        TypeHuman,
+        TypeSystem,
     }
+
 }

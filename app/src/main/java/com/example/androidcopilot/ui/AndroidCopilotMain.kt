@@ -9,7 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.androidcopilot.ui.chat.conversation.ChatConversationViewModel
 import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator
-import com.example.androidcopilot.ui.chat.message.ChatMessageScreen
+import com.example.androidcopilot.ui.chat.message.MessageScreen
 import com.example.androidcopilot.ui.theme.AndroidCopilotTheme
 
 @Composable
@@ -32,7 +32,7 @@ fun AndroidCopilotMain() {
             ) {
                 val conversationId = it.arguments?.getLong(AppScreens.MessageScreen.ArgConversationId)
                     ?: 0
-                ChatMessageScreen(
+                MessageScreen(
                     conversationId,
                     conversationViewModel = conversationViewModel,
                     messageViewModel = viewModel()

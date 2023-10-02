@@ -16,10 +16,6 @@ class ChatMessageViewModel: ViewModel() {
         Conversation(
             0,
             "Android Copilot",
-            0,
-            0,
-            0,
-            0,
         )
     )
 

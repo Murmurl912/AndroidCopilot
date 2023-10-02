@@ -5,11 +5,14 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 @Dao
 interface RoomChatDao {
@@ -83,4 +86,63 @@ interface RoomChatDao {
 
     @Query("select * from Message where conversation = :id order by createAt desc")
     fun conversationMessagePagingSource(id: Long): PagingSource<Int, Message>
+
+    @Transaction
+    suspend fun tryLockConversation(conversationId: Long): Conversation?  = withContext(NonCancellable) {
+        val currentConversation = findConversationById(conversationId)?.takeIf {
+            it.status == Conversation.ConversationStatus.StatusUnlocked
+        }?: return@withContext null
+
+        val updateCount = updateConversation(currentConversation)
+        if (updateCount > 0) {
+            currentConversation
+        } else {
+            null
+        }
+    }
+
+    @Transaction
+    suspend fun unlockConversation(conversationId: Long) {
+        findConversationById(conversationId)?.copy(status = Conversation.ConversationStatus.StatusUnlocked)?.let {
+                updateConversation(it)
+            }
+    }
+
+    @Query("select sum(token) " +
+            "from Message " +
+            "where conversation =:conversationId " +
+            "and status in (:messageStatuses)" +
+            "order by createAt desc " +
+            "limit :size"
+    )
+    suspend fun sumMessageToken(
+        conversationId: Long,
+        size: Int,
+        messageStatuses: List<Message.MessageStatus>
+    ): Int
+
+
+    @Transaction
+    suspend fun trimMemoryOffset(conversationId: Long): Conversation? = withContext(NonCancellable) {
+        val conversation = findConversationById(conversationId) ?: return@withContext null
+
+        var messageLimit = conversation.memoryMessageLimit
+        var tokenCount: Int
+        do {
+            tokenCount  = sumMessageToken(
+                conversation.id,
+                messageLimit--,
+                listOf(Message.MessageStatus.StatusSuccess)
+            )
+        } while (tokenCount > conversation.memoryTokenLimit && messageLimit > 0)
+        val updated = conversation.copy(
+            memoryToken = tokenCount,
+            memoryMessageLimit = messageLimit
+        )
+        if (updateConversation(updated) > 0) {
+            updated
+        } else {
+            null
+        }
+    }
 }

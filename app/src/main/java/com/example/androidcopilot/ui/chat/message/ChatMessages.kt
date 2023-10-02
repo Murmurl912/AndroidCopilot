@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatMessageScreen(
+fun MessageScreen(
     conversationId: Long = 0,
     conversationViewModel: ChatConversationViewModel,
     messageViewModel: ChatMessageViewModel,
@@ -80,7 +80,7 @@ fun ChatMessageScreen(
                 Modifier
                     .padding(it)
                     .systemBarsPadding()) {
-                ChatMessageList(modifier = Modifier.weight(1F), messages = messages)
+                MessageList(modifier = Modifier.weight(1F), messages = messages)
                 MixedMessageInput(
                     modifier = Modifier,
                     state = inputState,
@@ -97,7 +97,7 @@ fun ChatMessageScreen(
 
 
 @Composable
-fun ChatMessageList(
+fun MessageList(
     modifier: Modifier = Modifier,
     messages: List<Message> = emptyList(),
 ) {
@@ -105,37 +105,38 @@ fun ChatMessageList(
     LazyColumn(modifier,
         contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items(messages.size, {messages[it].id()}, {
+        items(messages.size, {messages[it].id}, {
             messages[it]::class.simpleName
         }) {
-            when (val message = messages[it]) {
-                is Message.HumanMessage -> {
+            val message = messages[it]
+            when (message.type) {
+                Message.MessageType.TypeHuman -> {
                     HumanMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
 
                 }
-                is Message.AssistantMessage -> {
+                Message.MessageType.TypeAssistant -> {
                     AssistantMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
-
                 }
-                is Message.FunctionCallRequestMessage -> {
+                Message.MessageType.TypeFunctionCallRequest -> {
                     FunctionCallRequestMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
                 }
-                is Message.FunctionCallResponseMessage -> {
+                Message.MessageType.TypeFunctionCallResponse -> {
                     FunctionCallResponseMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
                 }
-                is Message.SystemMessage -> {
+
+                Message.MessageType.TypeSystem -> {
                     SystemMessageItem(
                         Modifier.fillMaxWidth(),
                         message = message
@@ -149,7 +150,7 @@ fun ChatMessageList(
 @Composable
 fun AssistantMessageItem(
     modifier: Modifier = Modifier,
-    message: Message.AssistantMessage
+    message: Message
 ) {
     Row(modifier) {
         Card(modifier =
@@ -160,7 +161,7 @@ fun AssistantMessageItem(
             containerColor = MaterialTheme.colorScheme.secondaryContainer,
         )) {
             Box(Modifier.padding(12.dp)) {
-                Text(message.message)
+                Text(message.content)
             }
         }
         Spacer(modifier = Modifier.weight(0.1F))
@@ -171,7 +172,7 @@ fun AssistantMessageItem(
 @Composable
 fun HumanMessageItem(
     modifier: Modifier = Modifier,
-    message: Message.HumanMessage
+    message: Message
 ) {
     Row(modifier, horizontalArrangement = Arrangement.End) {
         Card(modifier = Modifier
@@ -182,7 +183,7 @@ fun HumanMessageItem(
             )
         ) {
             Box(Modifier.padding(12.dp)) {
-                Text(message.message)
+                Text(message.content)
             }
         }
     }
@@ -191,20 +192,20 @@ fun HumanMessageItem(
 @Composable
 fun SystemMessageItem(
     modifier: Modifier = Modifier,
-    message: Message.SystemMessage
+    message: Message
 ) {
     Row(modifier, horizontalArrangement = Arrangement.Center) {
-        Text(message.message, Modifier.padding(12.dp))
+        Text(message.content, Modifier.padding(12.dp))
     }
 }
 
 @Composable
 fun FunctionCallRequestMessageItem(
     modifier: Modifier = Modifier,
-    message: Message.FunctionCallRequestMessage
+    message: Message
 ) {
     Row(modifier, horizontalArrangement = Arrangement.Center) {
-        Text(message.message, Modifier.padding(12.dp))
+        Text(message.functionName + message.functionArgs, Modifier.padding(12.dp))
     }
 }
 
@@ -212,10 +213,10 @@ fun FunctionCallRequestMessageItem(
 @Composable
 fun FunctionCallResponseMessageItem(
     modifier: Modifier = Modifier,
-    message: Message.FunctionCallResponseMessage
+    message: Message
 ) {
     Row(modifier, horizontalArrangement = Arrangement.Center) {
-        Text(message.message, Modifier.padding(12.dp))
+        Text(message.content, Modifier.padding(12.dp))
     }
 }
 
@@ -223,56 +224,45 @@ fun FunctionCallResponseMessageItem(
 @Preview
 @Composable
 fun MessagesPreview() {
-    ChatMessageList(
+    MessageList(
         messages = listOf(
-            Message.AssistantMessage(
-                0,
-                0,
-                0,
-                "你不要骗我",
-                0,
-                0,
-                Message.Status.StatusSuccess
+            Message(
+                id = 1,
+                conversation = 0,
+                type = Message.MessageType.TypeHuman,
+                status = Message.MessageStatus.StatusSuccess,
+                content = "你不要瞎说"
             ),
-            Message.HumanMessage(
-                1,
-                0,
-                0,
-                "你不要吓我",
-                0,
-                0,
-                Message.Status.StatusSuccess
+            Message(
+                id = 2,
+                conversation = 0,
+                type = Message.MessageType.TypeAssistant,
+                status = Message.MessageStatus.StatusSuccess,
+                content = "我才不会骗人啦"
             ),
-            Message.SystemMessage(
-                2,
-                0,
-                0,
-                "推出了群聊",
-                0,
-                0,
+            Message(
+                id = 3,
+                conversation = 0,
+                type = Message.MessageType.TypeSystem,
+                status = Message.MessageStatus.StatusSuccess,
+                content = "不要相信人工智能"
             ),
-            Message.FunctionCallRequestMessage(
-                3,
-                0,
-                0,
-                "Android Copilot Request GPS Location Access",
-                "",
-                "",
-                0,
-                0,
-                Message.Status.StatusSuccess
+            Message(
+                id = 4,
+                conversation = 0,
+                type = Message.MessageType.TypeFunctionCallRequest,
+                status = Message.MessageStatus.StatusSuccess,
+                content = "",
+                functionName = "Current User Location",
+                functionArgs = "AI wants your location"
             ),
-            Message.FunctionCallResponseMessage(
-                4,
-                0,
-                0,
-                "You denied Location Access",
-                "",
-                "",
-                "",
-                0,
-                0,
-                Message.Status.StatusSuccess
+            Message(
+                id = 4,
+                conversation = 0,
+                type = Message.MessageType.TypeFunctionCallResponse,
+                status = Message.MessageStatus.StatusSuccess,
+                content = "Location: 北京",
+                functionName = "Current User Location",
             )
 
         )
