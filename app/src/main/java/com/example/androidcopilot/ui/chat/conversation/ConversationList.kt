@@ -18,7 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.androidcopilot.chat.model.ChatConversation
+import com.example.androidcopilot.chat.model.Conversation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,9 +41,9 @@ fun ConversationListDrawerSheet(
 @Composable
 fun ConversationList(
     modifier: Modifier = Modifier,
-    conversation: ChatConversation? = null,
-    conversations: List<ChatConversation> = emptyList(),
-    onClickConversation: (ChatConversation) -> Unit = {},
+    conversation: Conversation? = null,
+    conversations: List<Conversation> = emptyList(),
+    onClickConversation: (Conversation) -> Unit = {},
     onNewConversation: () -> Unit = {}
 ) {
 
@@ -69,7 +69,7 @@ fun ConversationList(
 @Composable
 fun ConversationItem(
     modifier: Modifier = Modifier,
-    conversation: ChatConversation,
+    conversation: Conversation,
     selected: Boolean = false,
     onClick: () -> Unit = {}
 ) {
@@ -110,7 +110,7 @@ fun NewConversationItem(
 @Composable
 fun ConversationItemPreview() {
     val conversations = listOf(
-        ChatConversation(
+        Conversation(
             0,
             "How to make money",
             0,
@@ -125,7 +125,7 @@ fun ConversationItemPreview() {
             0,
             0
         ),
-        ChatConversation(
+        Conversation(
             1,
             "How to make money",
             0,
@@ -140,7 +140,7 @@ fun ConversationItemPreview() {
             0,
             0
         ),
-        ChatConversation(
+        Conversation(
             2,
             "How to be rich",
             0,

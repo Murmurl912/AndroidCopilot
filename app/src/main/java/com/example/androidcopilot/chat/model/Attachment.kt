@@ -11,7 +11,7 @@ import java.io.Serializable
 @Entity
 @Parcelize
 @Keep
-data class ChatAttachment(
+data class Attachment(
     @PrimaryKey(autoGenerate = true)
     val id: Long,
     val type: String,

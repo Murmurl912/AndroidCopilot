@@ -6,8 +6,8 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
-import com.example.androidcopilot.chat.model.ChatAttachment
-import com.example.androidcopilot.chat.model.ChatConversation
+import com.example.androidcopilot.chat.model.Attachment
+import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
 import kotlinx.coroutines.flow.Flow
 
@@ -15,25 +15,25 @@ import kotlinx.coroutines.flow.Flow
 interface RoomChatDao {
 
     @Insert
-    suspend fun newConversation(conversation: ChatConversation): Long
+    suspend fun newConversation(conversation: Conversation): Long
 
     @Delete
-    suspend fun deleteConversation(conversation: ChatConversation): Int
+    suspend fun deleteConversation(conversation: Conversation): Int
 
     @Update
-    suspend fun updateConversation(conversation: ChatConversation): Int
+    suspend fun updateConversation(conversation: Conversation): Int
 
-    @Query("select * from ChatConversation where id = :id")
-    suspend fun findConversationById(id: Long): ChatConversation?
+    @Query("select * from Conversation where id = :id")
+    suspend fun findConversationById(id: Long): Conversation?
 
-    @Query("select * from ChatConversation where id = :id")
-    fun conversationFlow(id: Long): Flow<ChatConversation>
+    @Query("select * from Conversation where id = :id")
+    fun conversationFlow(id: Long): Flow<Conversation>
 
-    @Query("select * from ChatConversation order by updateAt desc")
-    fun conversationsFlow(): Flow<List<ChatConversation>>
+    @Query("select * from Conversation order by updateAt desc")
+    fun conversationsFlow(): Flow<List<Conversation>>
 
-    @Query("select * from ChatConversation order by updateAt desc limit :limit offset :offset")
-    suspend fun findConversations(offset: Int, limit: Int): List<ChatConversation>
+    @Query("select * from Conversation order by updateAt desc limit :limit offset :offset")
+    suspend fun findConversations(offset: Int, limit: Int): List<Conversation>
 
     @Insert
     suspend fun newMessage(message: Message): Long
@@ -64,22 +64,22 @@ interface RoomChatDao {
 
 
     @Insert
-    suspend fun newAttachment(attachment: ChatAttachment): Long
+    suspend fun newAttachment(attachment: Attachment): Long
 
     @Update
-    fun updateAttachment(attachment: ChatAttachment): Int
+    fun updateAttachment(attachment: Attachment): Int
 
     @Delete
-    suspend fun deleteAttachment(attachment: ChatAttachment): Int
+    suspend fun deleteAttachment(attachment: Attachment): Int
 
-    @Query("select * from ChatAttachment where id =:id")
-    suspend fun findAttachmentById(id: Long): ChatAttachment?
+    @Query("select * from Attachment where id =:id")
+    suspend fun findAttachmentById(id: Long): Attachment?
 
-    @Query("select * from ChatAttachment where messageId = :messageId")
-    suspend fun findMessageAttachment(messageId: Long): List<ChatAttachment>
+    @Query("select * from Attachment where messageId = :messageId")
+    suspend fun findMessageAttachment(messageId: Long): List<Attachment>
 
-    @Query("select * from ChatConversation order by updateAt desc")
-    fun conversationPagingSource(): PagingSource<Int, ChatConversation>
+    @Query("select * from Conversation order by updateAt desc")
+    fun conversationPagingSource(): PagingSource<Int, Conversation>
 
     @Query("select * from Message where conversation = :id order by createAt desc")
     fun conversationMessagePagingSource(id: Long): PagingSource<Int, Message>

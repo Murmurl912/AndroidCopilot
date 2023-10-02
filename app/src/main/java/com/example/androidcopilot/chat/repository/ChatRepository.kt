@@ -1,30 +1,30 @@
 package com.example.androidcopilot.chat.repository
 
 import androidx.paging.PagingSource
-import com.example.androidcopilot.chat.model.ChatAttachment
-import com.example.androidcopilot.chat.model.ChatConversation
+import com.example.androidcopilot.chat.model.Attachment
+import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
 import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
 
-    fun conversationListFlow(): Flow<List<ChatConversation>>
+    fun conversationListFlow(): Flow<List<Conversation>>
 
-    suspend fun conversations(offset: Int, limit: Int): List<ChatConversation>
+    suspend fun conversations(offset: Int, limit: Int): List<Conversation>
 
-    fun conversation(id: Long): Flow<ChatConversation>
+    fun conversation(id: Long): Flow<Conversation>
 
-    suspend fun newConversation(conversation: ChatConversation): ChatConversation
+    suspend fun newConversation(conversation: Conversation): Conversation
 
-    suspend fun deleteConversation(conversation: ChatConversation): ChatConversation?
+    suspend fun deleteConversation(conversation: Conversation): Conversation?
 
-    suspend fun updateConversation(conversation: ChatConversation): ChatConversation?
+    suspend fun updateConversation(conversation: Conversation): Conversation?
 
-    suspend fun findConversationById(id: Long): ChatConversation
+    suspend fun findConversationById(id: Long): Conversation
 
-    fun messageListFlow(conversation: ChatConversation): Flow<List<Message>>
+    fun messageListFlow(conversation: Conversation): Flow<List<Message>>
 
-    suspend fun messages(conversation: ChatConversation, offset: Int, limit: Int): List<Message>
+    suspend fun messages(conversation: Conversation, offset: Int, limit: Int): List<Message>
 
     suspend fun newMessage(message: Message): Message
 
@@ -34,17 +34,17 @@ interface ChatRepository {
 
     suspend fun findMessageById(id: Long): Message?
 
-    suspend fun newAttachment(attachment: ChatAttachment): ChatAttachment?
+    suspend fun newAttachment(attachment: Attachment): Attachment?
 
-    suspend fun deleteAttachment(attachment: ChatAttachment): ChatAttachment?
+    suspend fun deleteAttachment(attachment: Attachment): Attachment?
 
-    suspend fun updateAttachment(attachment: ChatAttachment): ChatAttachment?
+    suspend fun updateAttachment(attachment: Attachment): Attachment?
 
-    suspend fun findAttachmentById(id: Long): ChatAttachment?
+    suspend fun findAttachmentById(id: Long): Attachment?
 
-    suspend fun findAttachmentByMessage(id: Long): List<ChatAttachment>
+    suspend fun findAttachmentByMessage(id: Long): List<Attachment>
 
-    fun conversationPagingSource(): PagingSource<Int, ChatConversation>
+    fun conversationPagingSource(): PagingSource<Int, Conversation>
 
-    fun messagePagingSource(conversation: ChatConversation): PagingSource<Int, Message>
+    fun messagePagingSource(conversation: Conversation): PagingSource<Int, Message>
 }

@@ -53,7 +53,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
-import com.example.androidcopilot.chat.model.ChatAttachment
+import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.ui.keyboard.KeyboardHeights
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -79,7 +79,7 @@ data class MessageInputState(
     val input: String,
     val mode: InputMode,
     val sendState: SendState,
-    val attachments: List<ChatAttachment>,
+    val attachments: List<Attachment>,
 )
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalPermissionsApi::class)
@@ -92,7 +92,7 @@ fun MixedMessageInput(
     },
     onModeChange: (InputMode) -> Unit = {},
     onInputChange: (String) -> Unit = {},
-    onSendMessage: (String, List<ChatAttachment>) -> Unit = { _, _ -> },
+    onSendMessage: (String, List<Attachment>) -> Unit = { _, _ -> },
     onPause: () -> Unit = {},
     onRetry: () -> Unit = {},
     onResume: () -> Unit = {},

@@ -20,7 +20,7 @@ import java.io.Serializable
 @Keep
 data class Message(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    var id: Long = 0,
     val parent: Long = 0,
     val child: Long = 0,
     val conversation: Long,
@@ -35,7 +35,7 @@ data class Message(
         parentColumn = "id",
         entityColumn = "messageId"
     )
-    val attachment: List<ChatAttachment> = emptyList(),
+    val attachment: List<Attachment> = emptyList(),
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     val createAt: Long = 0,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")

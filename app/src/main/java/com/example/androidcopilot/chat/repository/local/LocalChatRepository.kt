@@ -1,52 +1,52 @@
 package com.example.androidcopilot.chat.repository.local
 
 import androidx.paging.PagingSource
-import com.example.androidcopilot.chat.model.ChatAttachment
-import com.example.androidcopilot.chat.model.ChatConversation
+import com.example.androidcopilot.chat.model.Attachment
+import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.chat.repository.ChatRepository
 import kotlinx.coroutines.flow.Flow
 
 class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository {
 
-    override fun conversationListFlow(): Flow<List<ChatConversation>> {
+    override fun conversationListFlow(): Flow<List<Conversation>> {
         return roomChatDao.conversationsFlow()
     }
 
-    override suspend fun conversations(offset: Int, limit: Int): List<ChatConversation> {
+    override suspend fun conversations(offset: Int, limit: Int): List<Conversation> {
         return roomChatDao.findConversations(offset, limit)
     }
 
-    override fun conversation(id: Long): Flow<ChatConversation> {
+    override fun conversation(id: Long): Flow<Conversation> {
         return roomChatDao.conversationFlow(id)
     }
 
-    override suspend fun newConversation(conversation: ChatConversation): ChatConversation {
+    override suspend fun newConversation(conversation: Conversation): Conversation {
         val id = roomChatDao.newConversation(conversation)
         return roomChatDao.findConversationById(id)!!
     }
 
-    override suspend fun deleteConversation(conversation: ChatConversation): ChatConversation? {
+    override suspend fun deleteConversation(conversation: Conversation): Conversation? {
         val deleted = roomChatDao.findConversationById(conversation.id)
         roomChatDao.deleteConversation(conversation)
         return deleted
     }
 
-    override suspend fun updateConversation(conversation: ChatConversation): ChatConversation? {
+    override suspend fun updateConversation(conversation: Conversation): Conversation? {
         roomChatDao.updateConversation(conversation)
         return roomChatDao.findConversationById(conversation.id)
     }
 
-    override suspend fun findConversationById(id: Long): ChatConversation? {
+    override suspend fun findConversationById(id: Long): Conversation? {
         return roomChatDao.findConversationById(id)
     }
 
-    override fun messageListFlow(conversation: ChatConversation): Flow<List<Message>> {
+    override fun messageListFlow(conversation: Conversation): Flow<List<Message>> {
         return roomChatDao.conversationMessageFlow(conversation.id, 0, Int.MAX_VALUE)
     }
 
     override suspend fun messages(
-        conversation: ChatConversation,
+        conversation: Conversation,
         offset: Int,
         limit: Int
     ): List<Message> {
@@ -73,35 +73,35 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.findMessage(id)
     }
 
-    override suspend fun newAttachment(attachment: ChatAttachment): ChatAttachment? {
+    override suspend fun newAttachment(attachment: Attachment): Attachment? {
         val id = roomChatDao.newAttachment(attachment)
         return roomChatDao.findAttachmentById(id)
     }
 
-    override suspend fun deleteAttachment(attachment: ChatAttachment): ChatAttachment? {
+    override suspend fun deleteAttachment(attachment: Attachment): Attachment? {
         val deleted = roomChatDao.findAttachmentById(attachment.id)
         roomChatDao.deleteAttachment(attachment)
         return deleted
     }
 
-    override suspend fun updateAttachment(attachment: ChatAttachment): ChatAttachment? {
+    override suspend fun updateAttachment(attachment: Attachment): Attachment? {
         roomChatDao.updateAttachment(attachment)
         return roomChatDao.findAttachmentById(attachment.id)
     }
 
-    override suspend fun findAttachmentById(id: Long): ChatAttachment? {
+    override suspend fun findAttachmentById(id: Long): Attachment? {
         return roomChatDao.findAttachmentById(id)
     }
 
-    override suspend fun findAttachmentByMessage(id: Long): List<ChatAttachment> {
+    override suspend fun findAttachmentByMessage(id: Long): List<Attachment> {
         return roomChatDao.findMessageAttachment(id)
     }
 
-    override fun conversationPagingSource(): PagingSource<Int, ChatConversation> {
+    override fun conversationPagingSource(): PagingSource<Int, Conversation> {
         return roomChatDao.conversationPagingSource()
     }
 
-    override fun messagePagingSource(conversation: ChatConversation): PagingSource<Int, Message> {
+    override fun messagePagingSource(conversation: Conversation): PagingSource<Int, Message> {
         return roomChatDao.conversationMessagePagingSource(conversation.id)
     }
 }
