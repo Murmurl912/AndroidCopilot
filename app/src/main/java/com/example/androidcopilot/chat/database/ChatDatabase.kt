@@ -52,11 +52,29 @@ abstract class ChatDatabase: RoomDatabase() {
                 END;
                     """.trimIndent()
                 )
+                db.execSQL("""
+                    
+                CREATE TRIGGER update_latest_message_id_on_insert
+                AFTER INSERT ON Message
+                BEGIN
+                    UPDATE Conversation
+                    SET latestMessageId = NEW.id
+                    WHERE id = NEW.conversation;
+                END;
+                
+                CREATE TRIGGER update_latest_message_id_on_delete
+                AFTER DELETE ON Message
+                BEGIN
+                    UPDATE Conversation
+                    SET latestMessageId = OLD.id
+                    WHERE id = OLD.conversation;
+                END;
+                """.trimIndent())
             }
         }
 
-        fun create(context: Context) {
-            Room.databaseBuilder(
+        fun create(context: Context): ChatDatabase {
+            return Room.databaseBuilder(
                 context,
                 ChatDatabase::class.java,
                 "chat-database.db"

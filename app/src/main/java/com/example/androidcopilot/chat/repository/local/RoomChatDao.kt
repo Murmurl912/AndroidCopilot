@@ -32,8 +32,8 @@ interface RoomChatDao {
     @Query("select * from Conversation where id = :id")
     fun conversationFlow(id: Long): Flow<Conversation>
 
-    @Query("select * from Conversation order by updateAt desc")
-    fun conversationsFlow(): Flow<List<Conversation>>
+    @Query("select * from Conversation where type in (:types) order by updateAt desc")
+    fun conversationsFlow(types: List<Conversation.ConversationType>): Flow<List<Conversation>>
 
     @Query("select * from Conversation order by updateAt desc limit :limit offset :offset")
     suspend fun findConversations(offset: Int, limit: Int): List<Conversation>
@@ -65,6 +65,16 @@ interface RoomChatDao {
     @Query("select * from Message where id = :id")
     fun findMessage(id: Long): Message?
 
+    @Query("update Message set status = :status, content = :content where id = :messageId")
+    suspend fun updateMessageStatusAndContent(messageId: Long, status: Message.MessageStatus, content: String)
+
+    @Query("update Message set status = :status, token = :token, child = :child where id = :messageId")
+    suspend fun updateMessageStatusAndToken(
+        messageId: Long,
+        status: Message.MessageStatus,
+        token: Int,
+        child: Long
+    )
 
     @Insert
     suspend fun newAttachment(attachment: Attachment): Long
@@ -121,29 +131,38 @@ interface RoomChatDao {
         messageStatuses: List<Message.MessageStatus>
     ): Int
 
-
     @Transaction
-    suspend fun trimMemoryOffset(conversationId: Long): Conversation? = withContext(NonCancellable) {
-        val conversation = findConversationById(conversationId) ?: return@withContext null
+    suspend fun updateConversationContextLimit(conversationId: Long): Conversation? {
+        val conversation = findConversationById(conversationId) ?: return null
+        val tokenLimit = conversation.contextTokenSizeLimit
+        var lowerLimit = 0
+        var upperLimit = conversation.messageCount
 
-        var messageLimit = conversation.memoryMessageLimit
-        var tokenCount: Int
+        var middle = conversation.contextMessageOffset
+        var currentSize: Int = conversation.contextTokenSize
         do {
-            tokenCount  = sumMessageToken(
-                conversation.id,
-                messageLimit--,
+            sumMessageToken(
+                conversationId,
+                middle,
                 listOf(Message.MessageStatus.StatusSuccess)
             )
-        } while (tokenCount > conversation.memoryTokenLimit && messageLimit > 0)
-        val updated = conversation.copy(
-            memoryToken = tokenCount,
-            memoryMessageLimit = messageLimit
-        )
-        if (updateConversation(updated) > 0) {
-            updated
-        } else {
-            null
-        }
+            if (currentSize > tokenLimit) {
+                upperLimit = middle - 1
+            } else {
+                lowerLimit = middle + 1
+            }
+            middle = (upperLimit + lowerLimit) / 2
+        } while (lowerLimit < upperLimit)
+        updateConversation(conversation.copy(
+            contextMessageOffset = lowerLimit,
+            contextTokenSize = currentSize
+        ))
+        return findConversationById(conversationId)
+    }
+
+    suspend fun contextMessages(conversationId: Long): List<Message> {
+        val conversation = findConversationById(conversationId)?: return emptyList()
+        return findConversationMessages(conversationId, 0, conversation.contextMessageOffset)
     }
 
     @Query("select * from Conversation where messageCount == 0 limit 1")
@@ -159,4 +178,9 @@ interface RoomChatDao {
         return findConversationById(id)!!
     }
 
+    @Query("update Conversation set title = :title where id = :conversationId")
+    suspend fun updateConversationTitle(conversationId: Long, title: String)
+
+    @Query("update Conversation set type = :type where id = :conversationId")
+    suspend fun updateConversationType(conversationId: Long, type: Conversation.ConversationType)
 }

@@ -12,7 +12,7 @@ interface ChatRepository {
 
     suspend fun unlockConversation(conversationId: Long)
 
-    suspend fun trimMemoryOffset(conversationId: Long): Conversation?
+    suspend fun refreshContextMessageOffset(conversationId: Long): Conversation?
 
     fun conversationListFlow(): Flow<List<Conversation>>
 
@@ -26,7 +26,9 @@ interface ChatRepository {
 
     suspend fun deleteConversation(conversation: Conversation): Conversation?
 
-    suspend fun updateConversation(conversation: Conversation): Conversation?
+    suspend fun updateConversationTitle(conversationId: Long, title: String)
+
+    suspend fun updateConversationType(conversationId: Long, type: Conversation.ConversationType)
 
     suspend fun findConversationById(id: Long): Conversation?
 
@@ -34,9 +36,24 @@ interface ChatRepository {
 
     suspend fun messages(conversation: Conversation, offset: Int, limit: Int): List<Message>
 
+    suspend fun contextMessages(conversationId: Long): List<Message>
+
     suspend fun newMessage(message: Message): Message
 
     suspend fun updateMessage(message: Message): Message?
+
+    suspend fun updateMessageStatusAndContent(
+        messageId: Long,
+        status: Message.MessageStatus,
+        content: String
+    )
+
+    suspend fun updateMessageStatusChildAndToken(
+        messageId: Long,
+        status: Message.MessageStatus,
+        token: Int,
+        child: Long,
+    )
 
     suspend fun deleteMessage(message: Message): Message?
 

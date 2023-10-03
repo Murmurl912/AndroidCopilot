@@ -5,6 +5,8 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.navigation.AppScreens.MessageScreen.ArgConversationId
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 sealed class AppScreens(
     val route: String,
@@ -27,13 +29,18 @@ sealed class AppScreens(
         }
     )) {
 
+        /**
+         * Message is encoded with base64
+         */
+        @OptIn(ExperimentalEncodingApi::class)
         fun createRoute(conversationId: Long,
                         send: String? = null,
                         attachments: List<Long> = emptyList()): String {
             return name.replace("{${args[0].name}}", "$conversationId")
                 .let {
                     if (send != null) {
-                        it.replace("{${args[1].name}}", "$send")
+                        val encoded = Base64.encode(send.toByteArray())
+                        it.replace("{${args[1].name}}", "$encoded")
                     } else {
                         it
                     }

@@ -7,8 +7,11 @@ import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
@@ -28,11 +31,10 @@ class ConversationListDrawerViewModel  @Inject constructor (
 
     init {
         viewModelScope.launch {
-            client.conversations()
-                .stateIn(this)
-                .collect {
-                    conversations.value = it
-                }
+            client.conversations().collect {
+                conversations.value = it
+
+            }
         }
     }
 
@@ -42,12 +44,20 @@ class ConversationListDrawerViewModel  @Inject constructor (
         )
     }
 
-    fun onDeleteConversation(conversation: Conversation) {
+    fun onDeleteConversation(
+        conversation: Conversation,
+        onCompleted: (Boolean, Throwable?) -> Unit = {_, _ -> }
+    ) {
         viewModelScope.launch {
             client.delete(conversation)
+            onCompleted(true, null)
+            // wait animation
+            delay(200)
             Navigator.navigate(
                 AppScreens.HomeScreen.name
             )
+        }.invokeOnCompletion {
+            onCompleted(false, it)
         }
     }
 

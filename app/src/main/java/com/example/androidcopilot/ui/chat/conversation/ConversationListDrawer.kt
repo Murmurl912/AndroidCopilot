@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.chat.model.Conversation
@@ -137,7 +138,12 @@ internal fun ConversationItem(
     NavigationDrawerItem(
         modifier = modifier,
         label = {
-            Text(text = conversation.title)
+            val title = if (conversation.title.isEmpty()) {
+                "Untitled Conversation"
+            } else {
+                conversation.title
+            }
+            Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }, selected = selected,
         onClick = onClick,
         shape = RoundedCornerShape(6.dp),

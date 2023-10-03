@@ -17,12 +17,18 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         roomChatDao.unlockConversation(conversationId)
     }
 
-    override suspend fun trimMemoryOffset(conversationId: Long): Conversation? {
-        return roomChatDao.trimMemoryOffset(conversationId)
+    override suspend fun refreshContextMessageOffset(conversationId: Long): Conversation? {
+        return roomChatDao.updateConversationContextLimit(conversationId)
+    }
+
+    override suspend fun contextMessages(conversationId: Long): List<Message> {
+        return roomChatDao.contextMessages(conversationId)
     }
 
     override fun conversationListFlow(): Flow<List<Conversation>> {
-        return roomChatDao.conversationsFlow()
+        return roomChatDao.conversationsFlow(listOf(
+            Conversation.ConversationType.TypePersistent
+        ))
     }
 
     override suspend fun conversations(offset: Int, limit: Int): List<Conversation> {
@@ -48,9 +54,15 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return deleted
     }
 
-    override suspend fun updateConversation(conversation: Conversation): Conversation? {
-        roomChatDao.updateConversation(conversation)
-        return roomChatDao.findConversationById(conversation.id)
+    override suspend fun updateConversationTitle(conversationId: Long, title: String) {
+        roomChatDao.updateConversationTitle(conversationId, title)
+    }
+
+    override suspend fun updateConversationType(
+        conversationId: Long,
+        type: Conversation.ConversationType
+    ) {
+        roomChatDao.updateConversationType(conversationId, type)
     }
 
     override suspend fun findConversationById(id: Long): Conversation? {
@@ -77,6 +89,23 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
     override suspend fun updateMessage(message: Message): Message? {
         roomChatDao.updateMessage(message)
         return roomChatDao.findMessage(message.id)
+    }
+
+    override suspend fun updateMessageStatusAndContent(
+        messageId: Long,
+        status: Message.MessageStatus,
+        content: String
+    ) {
+        roomChatDao.updateMessageStatusAndContent(messageId, status, content)
+    }
+
+    override suspend fun updateMessageStatusChildAndToken(
+        messageId: Long,
+        status: Message.MessageStatus,
+        token: Int,
+        child: Long,
+    ) {
+        roomChatDao.updateMessageStatusAndToken(messageId, status, token, child)
     }
 
     override suspend fun deleteMessage(message: Message): Message? {

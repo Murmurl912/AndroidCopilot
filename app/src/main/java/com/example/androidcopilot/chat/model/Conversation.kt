@@ -16,20 +16,27 @@ data class Conversation(
     val id: Long = 0,
     val title: String = "",
     val model: String = "",
-    val type: ConversationType = ConversationType.TypePersistent,
+    val prompt: String = "",
+    val type: ConversationType = ConversationType.TypeDraft,
     val status: ConversationStatus = ConversationStatus.StatusUnlocked,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     val createAt: Long = 0,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     val updateAt: Long = 0,
 
+    /**
+     * Total message count in this conversation, auto updated by sql trigger
+     */
     val messageCount: Int = 0,
     val totalTokens: Int = 0,
 
-    val memoryTokenLimit: Int = 3500,
-    val memoryToken: Int = 0,
-    val memoryMessageLimit: Int = Int.MAX_VALUE,
+    val contextTokenSizeLimit: Int = 3500,
+    val contextTokenSize: Int = 0,
+    val contextMessageOffset: Int = Int.MAX_VALUE,
 
+    /**
+     * Last Message in this conversation, Auto updated by sql trigger
+     */
     val latestMessageId: Long = 0,
 ): Serializable, Parcelable {
 
@@ -39,7 +46,8 @@ data class Conversation(
     }
 
     enum class ConversationType {
-        TypePersistent
+        TypePersistent,
+        TypeDraft,
     }
 
 }

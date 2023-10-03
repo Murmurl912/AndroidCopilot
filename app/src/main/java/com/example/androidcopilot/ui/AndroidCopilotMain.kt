@@ -26,7 +26,6 @@ fun AndroidCopilotMain() {
             Navigator.processNavCommands(controller)
         }
         val conversationViewModel: ConversationListDrawerViewModel = hiltViewModel()
-        val conversations by conversationViewModel.conversations.collectAsState()
 
         NavHost(
             navController = controller,

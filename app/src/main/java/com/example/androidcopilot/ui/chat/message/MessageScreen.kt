@@ -24,6 +24,9 @@ import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -37,6 +40,7 @@ import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -66,11 +71,22 @@ fun MessageScreen(
     var showMenu by remember {
         mutableStateOf(false)
     }
+    var showDelete by remember {
+        mutableStateOf(false)
+    }
+    var isDeletingConversation by remember {
+        mutableStateOf(false)
+    }
     ConversationListDrawer(conversationViewModel = conversationViewModel) {
         Scaffold(
             topBar = {
                 TopAppBar(title = {
-                    Text(conversation.title)
+                    val title = if (conversation.title.isEmpty()) {
+                        "Untitled Conversation"
+                    } else {
+                        conversation.title
+                    }
+                    Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }, navigationIcon = {
                     IconButton(onClick = conversationViewModel::toggleDrawer
                     ) {
@@ -85,11 +101,13 @@ fun MessageScreen(
                     MessageMenu(expanded = showMenu, onDismissRequest = {
                         showMenu = false
                     }, onNewChat = {
+                        showMenu = false
                         conversationViewModel.onNewConversation()
                     }, onDelete = {
-                        conversationViewModel.onDeleteConversation(conversation)
+                        showMenu = false
+                        showDelete = true
                     }, onRename = {
-
+                        showMenu = false
                     })
                 })
             }
@@ -110,6 +128,16 @@ fun MessageScreen(
                     onRetry = messageViewModel::retry
                 )
             }
+            MessageDeleteDialog(show = showDelete, onDismissRequest = {
+                showDelete = false
+            }, onDelete = {
+                isDeletingConversation = true
+                conversationViewModel.onDeleteConversation(conversation, onCompleted = {
+                    success, error ->
+                    showMenu = false
+                    isDeletingConversation = false
+                })
+            })
         }
     }
 }
@@ -251,7 +279,6 @@ fun MessageMenu(
     onRename: () -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
-
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
@@ -260,17 +287,17 @@ fun MessageMenu(
         ) {
         DropdownMenuItem(text = {
             Text(text = "New chat")
-        }, onClick = { /*TODO*/ }, leadingIcon = {
+        }, onClick = onNewChat, leadingIcon = {
             Icon(Icons.Default.Add, contentDescription = "")
         })
         DropdownMenuItem(text = {
             Text(text = "History")
-        }, onClick = { /*TODO*/ }, leadingIcon = {
+        }, onClick = onHistory, leadingIcon = {
             Icon(Icons.Default.History, contentDescription = "")
         })
         DropdownMenuItem(text = {
             Text(text = "Settings")
-        }, onClick = { /*TODO*/ }, leadingIcon = {
+        }, onClick = onSetting, leadingIcon = {
             Icon(Icons.Default.Settings, contentDescription = "")
         })
 
@@ -281,22 +308,61 @@ fun MessageMenu(
 
         DropdownMenuItem(text = {
             Text(text = "Share chat")
-        }, onClick = { /*TODO*/ }, leadingIcon = {
+        }, onClick = onShare, leadingIcon = {
             Icon(Icons.Default.IosShare, contentDescription = "")
         })
         DropdownMenuItem(text = {
             Text(text = "Rename")
-        }, onClick = { /*TODO*/ }, leadingIcon = {
+        }, onClick = onRename, leadingIcon = {
             Icon(Icons.Default.Edit, contentDescription = "")
         })
         DropdownMenuItem(text = {
             Text(text = "Delete")
-        }, onClick = { /*TODO*/ }, leadingIcon = {
+        }, onClick = onDelete, leadingIcon = {
             Icon(Icons.Default.DeleteOutline, contentDescription = "")
         }, colors = MenuDefaults.itemColors(
             textColor = MaterialTheme.colorScheme.error,
             leadingIconColor = MaterialTheme.colorScheme.error
         ))
+    }
+}
+
+@Composable
+fun MessageDeleteDialog(
+    show: Boolean = false,
+    isDeleting: Boolean = false,
+    onDismissRequest: () -> Unit = {},
+    onDelete: () -> Unit = {}
+) {
+    if (show) {
+        AlertDialog(
+            onDismissRequest = {
+               if (!isDeleting) {
+                   onDismissRequest()
+               }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = onDelete, enabled = !isDeleting, colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text(text = "Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissRequest, enabled = !isDeleting) {
+                    Text(text = "Cancel")
+                }
+            },
+            title = {
+                Text(text = "Delete Conversation")
+            },
+            text = {
+                Text(text = "Are your sure to delete this conversation?")
+
+            }
+        )
     }
 }
 

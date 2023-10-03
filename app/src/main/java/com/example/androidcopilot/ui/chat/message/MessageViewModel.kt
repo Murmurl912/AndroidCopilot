@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 @HiltViewModel
 class MessageViewModel  @Inject constructor (private val chatClient: ChatClient): ViewModel() {
@@ -56,7 +58,7 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
                 } else {
                     emptyFlow()
                 }
-            }.stateIn(viewModelScope).collect {
+            }.collect {
                 conversation.value = it
             }
         }
@@ -67,7 +69,7 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
                 } else {
                     emptyFlow()
                 }
-            }.stateIn(viewModelScope).collect {
+            }.collect {
                 messages.value = it
             }
         }
@@ -89,8 +91,11 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
         }
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
     fun sendWithAttachmentId(message: String, attachments: List<Long>) {
-        send(message, emptyList())
+        val messageDecoded = Base64.decode(message)
+            .decodeToString()
+        send(messageDecoded, emptyList())
     }
 
     fun send(message: String, attachments: List<Attachment>) {

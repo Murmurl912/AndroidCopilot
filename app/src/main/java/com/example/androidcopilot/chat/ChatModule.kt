@@ -1,9 +1,6 @@
 package com.example.androidcopilot.chat
 
-import androidx.room.Room
-import androidx.room.RoomDatabase
 import com.aallam.openai.client.OpenAI
-import com.aallam.openai.client.OpenAIConfig
 import com.aallam.openai.client.OpenAIHost
 import com.example.androidcopilot.BuildConfig
 import com.example.androidcopilot.app.ApplicationDependencies
@@ -25,11 +22,7 @@ object ChatModule {
 
     @Provides
     fun provideChatDatabase(): ChatDatabase {
-        return Room.databaseBuilder(
-            ApplicationDependencies.applicationContext,
-            ChatDatabase::class.java,
-            "chat-database.db"
-        ).build()
+        return ChatDatabase.create(ApplicationDependencies.applicationContext)
     }
 
     @Provides
