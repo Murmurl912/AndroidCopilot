@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIConfig
 import com.aallam.openai.client.OpenAIHost
+import com.example.androidcopilot.BuildConfig
 import com.example.androidcopilot.app.ApplicationDependencies
 import com.example.androidcopilot.chat.database.ChatDatabase
 import com.example.androidcopilot.chat.openai.OpenaiChatClient
@@ -31,9 +32,9 @@ object ChatModule {
     @Provides
     fun provideOpenAi(): OpenAI {
         return OpenAI(
-            token = "sk-ZeQg7QatJlhbGQQE1Xa76t52juvhqV8DYMCfc0V6FvooU6Yt",
+            token = BuildConfig.OPENAI_TOKEN,
             host = OpenAIHost(
-               "https://api.openai-proxy.org/v1"
+               BuildConfig.OPENAI_API
             )
         )
     }

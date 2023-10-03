@@ -13,6 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+config.properties
 
 # Project exclude paths
 /buildSrc/build/

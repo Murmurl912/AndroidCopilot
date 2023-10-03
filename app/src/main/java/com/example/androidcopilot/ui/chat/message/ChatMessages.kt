@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.ui.chat.conversation.ChatConversationViewModel
 import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawerSheet
-import com.example.androidcopilot.ui.chat.input.MixedMessageInput
+import com.example.androidcopilot.ui.chat.input.MessageInput
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,10 +81,10 @@ fun MessageScreen(
                     .padding(it)
                     .systemBarsPadding()) {
                 MessageList(modifier = Modifier.weight(1F), messages = messages)
-                MixedMessageInput(
+                MessageInput(
                     modifier = Modifier,
                     state = inputState,
-                    onModeChange = messageViewModel::switchInput,
+                    onModeChange = messageViewModel::mode,
                     onInputChange = messageViewModel::input,
                     onSendMessage = messageViewModel::send,
                     onPause = messageViewModel::pause,

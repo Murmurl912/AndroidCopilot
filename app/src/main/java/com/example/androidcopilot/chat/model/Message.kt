@@ -23,11 +23,6 @@ data class Message(
     val token: Int = 0,
     val functionName: String? = null,
     val functionArgs: String? = null,
-    @Relation(
-        parentColumn = "id",
-        entityColumn = "messageId"
-    )
-    val attachment: List<Attachment> = emptyList(),
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
     val createAt: Long = 0,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")

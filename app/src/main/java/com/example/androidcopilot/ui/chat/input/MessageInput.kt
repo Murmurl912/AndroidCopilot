@@ -84,7 +84,7 @@ data class MessageInputState(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalPermissionsApi::class)
 @Composable
-fun MixedMessageInput(
+fun MessageInput(
     modifier: Modifier = Modifier,
     state: MessageInputState,
     label: @Composable () -> Unit = {
@@ -417,7 +417,7 @@ fun MixedMessageInputPreivew() {
                "", InputMode.TextInput, SendState.StateIdle, emptyList())
            )
        }
-       MixedMessageInput(
+       MessageInput(
            state = state
        )
    }

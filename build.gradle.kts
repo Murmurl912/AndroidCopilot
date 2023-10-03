@@ -5,3 +5,4 @@ plugins {
     id("com.google.dagger.hilt.android") version dependency.Versions.Hlit apply false
 }
 
+dependency.Config.config("config.properties")

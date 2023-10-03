@@ -14,7 +14,8 @@ import com.example.androidcopilot.chat.repository.local.RoomChatDao
         Conversation::class,
         Attachment::class
     ],
-    version = 1
+    version = 1,
+    exportSchema = false
 )
 abstract class ChatDatabase: RoomDatabase() {
 

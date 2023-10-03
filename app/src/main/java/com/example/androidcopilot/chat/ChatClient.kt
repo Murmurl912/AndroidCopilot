@@ -10,6 +10,8 @@ interface ChatClient {
 
     fun messages(conversation: Conversation): Flow<List<Message>>
 
+    suspend fun conversation(): Conversation
+
     fun conversations(): Flow<List<Conversation>>
 
 }

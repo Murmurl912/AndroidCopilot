@@ -1,6 +1,8 @@
 package dependency
 
 object Versions {
+    const val KtorClientAndroid = "2.3.4"
+    const val HlitComposeNavigation = "1.0.0"
     const val NavigationCompose = "2.6.0"
     const val Mosi = "1.14.0"
     const val Retrofit = "2.9.0"

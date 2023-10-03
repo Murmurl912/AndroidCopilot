@@ -54,6 +54,7 @@ object Dependencies {
     const val RoomPaging = "androidx.room:room-paging:${Versions.Room}"
 
     const val AndroidHlit = "com.google.dagger:hilt-android:${Versions.Hlit}"
+    const val HlitComposeNavigation = "androidx.hilt:hilt-navigation-compose:${Versions.HlitComposeNavigation}"
     const val AndroidHlitCompiler = "com.google.dagger:hilt-android-compiler:${Versions.Hlit}"
-
+    const val KtorAndroidClient =  "io.ktor:ktor-client-android:${Versions.KtorClientAndroid}"
 }

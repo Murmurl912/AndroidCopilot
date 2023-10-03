@@ -61,7 +61,11 @@ class OpenaiChatClient(
             ModelId(conversation.model),
             messages = memory.mapNotNull(Message::toChatMessage)
         )
-        var send = message
+        var send = message.copy(
+            conversation = conversation.id,
+            parent = conversation.latestMessageId,
+        )
+        send = chatRepository.newMessage(send)
         var reply = Message(
             parent = send.id,
             conversation = conversation.id,
@@ -168,6 +172,14 @@ class OpenaiChatClient(
 
     override fun messages(conversation: Conversation): Flow<List<Message>> {
         return chatRepository.messageListFlow(conversation)
+    }
+
+    override suspend fun conversation(): Conversation {
+        return chatRepository.newConversation(
+            Conversation(
+                model = "gpt-3.5-turbo-16k"
+            )
+        )
     }
 
     override fun conversations(): Flow<List<Conversation>> {

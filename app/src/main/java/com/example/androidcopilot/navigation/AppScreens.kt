@@ -24,6 +24,9 @@ sealed class AppScreens(
 
         const val ArgConversationId = "conversationId"
     }
+
+    object HomeScreen: AppScreens("home")
+
 }
 
 private fun String.appendArgs(args: List<NamedNavArgument>): String {

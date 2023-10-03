@@ -2,6 +2,7 @@ package com.example.androidcopilot.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -9,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.androidcopilot.ui.chat.conversation.ChatConversationViewModel
 import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator
+import com.example.androidcopilot.ui.chat.home.HomeScreen
 import com.example.androidcopilot.ui.chat.message.MessageScreen
 import com.example.androidcopilot.ui.theme.AndroidCopilotTheme
 
@@ -21,11 +23,19 @@ fun AndroidCopilotMain() {
         LaunchedEffect(Unit) {
             Navigator.processNavCommands(controller)
         }
-        val conversationViewModel: ChatConversationViewModel = viewModel()
+        val conversationViewModel: ChatConversationViewModel = hiltViewModel()
         NavHost(
             navController = controller,
-            startDestination = AppScreens.MessageScreen.createRoute(0)
+            startDestination = AppScreens.HomeScreen.name
         ) {
+
+            composable(route = AppScreens.HomeScreen.name) {
+                HomeScreen(
+                    homeViewModel = hiltViewModel(),
+                    conversationViewModel = conversationViewModel
+                )
+            }
+
             composable(
                 route = AppScreens.MessageScreen.name,
                 arguments = AppScreens.MessageScreen.args
@@ -35,7 +45,7 @@ fun AndroidCopilotMain() {
                 MessageScreen(
                     conversationId,
                     conversationViewModel = conversationViewModel,
-                    messageViewModel = viewModel()
+                    messageViewModel = hiltViewModel()
                 )
             }
         }

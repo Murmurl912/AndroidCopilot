@@ -27,12 +27,18 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "OPENAI_TOKEN", dependency.Config.openaiToken())
+            buildConfigField("String", "OPENAI_API", dependency.Config.openaiApi())
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "OPENAI_TOKEN", dependency.Config.openaiToken())
+            buildConfigField("String", "OPENAI_API", dependency.Config.openaiApi())
         }
     }
     compileOptions {
@@ -44,6 +50,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = ProjectConfig.COMPOSE_COMPILER_EXTENSION
@@ -92,9 +99,12 @@ dependencies {
 
 
     implementation(Dependencies.AndroidHlit)
+    implementation(Dependencies.HlitComposeNavigation)
     kapt(Dependencies.HiltAndroidCompiler)
 
     implementation(Dependencies.AallamOpenAi)
+    implementation(Dependencies.KtorAndroidClient)
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.18.0")
 
     testImplementation(Dependencies.Junit)
     androidTestImplementation(Dependencies.AndroidxTestExtJunit)
