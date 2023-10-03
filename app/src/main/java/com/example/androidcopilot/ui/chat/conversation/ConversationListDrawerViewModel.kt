@@ -42,6 +42,15 @@ class ConversationListDrawerViewModel  @Inject constructor (
         )
     }
 
+    fun onDeleteConversation(conversation: Conversation) {
+        viewModelScope.launch {
+            client.delete(conversation)
+            Navigator.navigate(
+                AppScreens.HomeScreen.name
+            )
+        }
+    }
+
     fun onSwitchConversation(conversation: Conversation) {
         currentConversation.value = conversation
         Navigator.navigate(
@@ -75,5 +84,10 @@ class ConversationListDrawerViewModel  @Inject constructor (
         }
     }
 
-    internal class DrawerCommand(val open: Boolean)
+    internal class DrawerCommand(val open: Boolean) {
+        var consumed = false
+        fun consume() {
+            consumed = true
+        }
+    }
 }

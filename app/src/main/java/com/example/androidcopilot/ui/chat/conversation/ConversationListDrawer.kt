@@ -49,11 +49,15 @@ fun ConversationListDrawer(
     }
     LaunchedEffect(Unit) {
         conversationViewModel.drawerCommands.collect { command ->
+            if (command.consumed) {
+                return@collect
+            }
             if (command.open && drawerState.targetValue != DrawerValue.Open) {
                 drawerState.open()
             } else if (drawerState.targetValue != DrawerValue.Closed){
                 drawerState.close()
             }
+            command.consume()
         }
     }
     val windowSizeClass = LocalWindowSizeClass.current

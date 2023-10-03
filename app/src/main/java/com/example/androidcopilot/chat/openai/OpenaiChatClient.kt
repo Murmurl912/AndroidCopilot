@@ -4,19 +4,24 @@ import com.aallam.openai.api.chat.ChatCompletionRequest
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.api.chat.FunctionCall
+import com.aallam.openai.api.completion.CompletionRequest
 import com.aallam.openai.api.core.FinishReason
 import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
+import com.example.androidcopilot.chat.AppLogger
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.chat.ChatClient
+import com.example.androidcopilot.chat.model.isCompleted
 import com.example.androidcopilot.chat.repository.ChatRepository
+import com.example.androidcopilot.ui.chat.input.SendState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -27,6 +32,8 @@ import kotlinx.coroutines.withContext
 class OpenaiChatClient(
     private val openai: OpenAI,
     private val chatRepository: ChatRepository,
+    private val scope: CoroutineScope,
+    private val logger: AppLogger,
 ): ChatClient {
 
 
@@ -44,6 +51,8 @@ class OpenaiChatClient(
     private suspend fun sendMessage(message: Message): Flow<Message> {
         var conversation = chatRepository.findConversationById(message.conversation)
             ?: throw IllegalStateException("Conversation: ${message.id} Not Found")
+
+        val newTitleConversation = conversation.title.isEmpty() && conversation.messageCount == 0
 
         val memoryMessages = chatRepository.messages(
             conversation,
@@ -65,7 +74,14 @@ class OpenaiChatClient(
             conversation = conversation.id,
             parent = conversation.latestMessageId,
         )
-        send = chatRepository.newMessage(send)
+        scope.launch {
+            send = chatRepository.newMessage(send)
+        }.join()
+        if (newTitleConversation) {
+            scope.launch {
+                summarizeConversationTitle(message.content, conversation)
+            }
+        }
         var reply = Message(
             parent = send.id,
             conversation = conversation.id,
@@ -104,27 +120,30 @@ class OpenaiChatClient(
                     status = messageStatus,
                     type = type
                 )
-                if (reply.id == 0L) {
-                    reply = chatRepository.newMessage(reply)
-                    send = send.copy(
-                        child = reply.id,
-                        token = it.usage?.totalTokens?.let { total ->
-                            total - memoryTokens - reply.token
-                        } ?: 0,
-                        status = messageStatus
-                    )
-                    chatRepository.updateMessage(send)
-                    chatRepository.updateConversation(
-                        conversation.copy(latestMessageId = reply.id).also {
-                            conversation = it
-                        }
-                    )
-                } else {
-                    chatRepository.updateMessage(reply)
-                }
+                scope.launch {
+                    if (reply.id == 0L) {
+                        reply = chatRepository.newMessage(reply)
+                        send = send.copy(
+                            child = reply.id,
+                            token = it.usage?.totalTokens?.let { total ->
+                                total - memoryTokens - reply.token
+                            } ?: 0,
+                            status = messageStatus
+                        )
+                        chatRepository.updateMessage(send)
+                        chatRepository.updateConversation(
+                            conversation.copy(latestMessageId = reply.id).also {
+                                conversation = it
+                            }
+                        )
+                    } else {
+                        chatRepository.updateMessage(reply)
+                    }
+                }.join()
+
                 reply
             }
-            .onCompletion {
+            .catch {
                 if (it is CancellationException) {
                     // canceled
                     send = send.copy(
@@ -136,7 +155,7 @@ class OpenaiChatClient(
                         status = Message.MessageStatus.StatusStopped,
                         updateAt = System.currentTimeMillis(),
                     )
-                } else if (it != null) {
+                } else {
                     // error
                     send = send.copy(
                         status = Message.MessageStatus.StatusError,
@@ -147,31 +166,74 @@ class OpenaiChatClient(
                         status = Message.MessageStatus.StatusError,
                         updateAt = System.currentTimeMillis()
                     )
-                } else {
+                }
+                scope.launch {
+                    chatRepository.updateMessage(send)
+                    chatRepository.updateMessage(reply)
+                    chatRepository.trimMemoryOffset(conversation.id)
+                }.join()
+            }
+            .onCompletion {
+                if (!send.isCompleted()) {
                     send = send.copy(
                         status = Message.MessageStatus.StatusSuccess,
                         updateAt = System.currentTimeMillis(),
                         child = reply.id
                     )
+                }
+                if (!reply.isCompleted()) {
                     reply = reply.copy(
                         status = Message.MessageStatus.StatusSuccess,
-                        updateAt = System.currentTimeMillis()
+                        updateAt = System.currentTimeMillis(),
                     )
                 }
-                withContext(NonCancellable) {
+                scope.launch {
                     chatRepository.updateMessage(send)
                     chatRepository.updateMessage(reply)
                     chatRepository.trimMemoryOffset(conversation.id)
-                }
+                }.join()
             }
             .catch {
-
+                logger.error("chat", it) {
+                    "error send message"
+                }
             }
     }
 
+    private suspend fun summarizeConversationTitle(message: String, conversation: Conversation) {
+        var currentConversation = conversation
+        openai.chatCompletions(
+            ChatCompletionRequest(
+                ModelId(conversation.model),
+                messages = listOf(
+                    ChatMessage(
+                        ChatRole.System,
+                        """
+                                You are Android Copilot, An AI assistant design to help user's questions.
+                                Now your are given a task: 
+                                Given user input, summarize conversation topics in few words. 
+                                And follow user's language.
+                                If you don't know how to summarize it, reply: Assist with user's request.
+                                User input is: $message
+                            """.trimIndent()
+                    )
+                )
+            )
+        ).catch {
+            logger.error("chat", it) {
+                "error summary message"
+            }
+        }.collect {
+            val content = it.choices[0].delta.content
+            currentConversation =
+                currentConversation.copy(title = currentConversation.title + content)
+            chatRepository.updateConversation(conversation)
+        }
+    }
 
-    override fun messages(conversation: Conversation): Flow<List<Message>> {
-        return chatRepository.messageListFlow(conversation)
+
+    override fun messages(conversationId: Long): Flow<List<Message>> {
+        return chatRepository.messageListFlow(conversationId)
     }
 
     override suspend fun conversation(): Conversation {
@@ -182,10 +244,17 @@ class OpenaiChatClient(
         )
     }
 
+    override suspend fun conversation(id: Long): Flow<Conversation> {
+        return chatRepository.conversation(id)
+    }
+
     override fun conversations(): Flow<List<Conversation>> {
         return chatRepository.conversationListFlow()
     }
 
+    override suspend fun delete(conversation: Conversation) {
+        chatRepository.deleteConversation(conversation)
+    }
 }
 
 private fun Message.toChatMessage(): ChatMessage? {

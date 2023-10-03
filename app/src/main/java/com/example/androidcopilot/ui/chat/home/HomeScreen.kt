@@ -59,8 +59,6 @@ fun HomeScreen(
                     onModeChange = homeViewModel::mode,
                     onInputChange = homeViewModel::input,
                     onSendMessage = homeViewModel::send,
-                    onPause = homeViewModel::pause,
-                    onRetry = homeViewModel::retry
                 )
             }
         }

@@ -10,7 +10,12 @@ import com.example.androidcopilot.ui.chat.input.InputMode
 import com.example.androidcopilot.ui.chat.input.MessageInputState
 import com.example.androidcopilot.ui.chat.input.SendState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,13 +23,12 @@ import javax.inject.Inject
 @HiltViewModel
 class MessageViewModel  @Inject constructor (private val chatClient: ChatClient): ViewModel() {
 
-    val conversation: MutableStateFlow<Conversation> = MutableStateFlow(
-        Conversation(
-            0,
-            "Android Copilot",
-        )
+    private val conversationIdState: MutableStateFlow<Long> = MutableStateFlow(
+        0L
     )
-
+    val conversation: MutableStateFlow<Conversation> = MutableStateFlow(
+        Conversation(title = "Android Copilot")
+    )
     val messages: MutableStateFlow<List<Message>> = MutableStateFlow(
         emptyList()
     )
@@ -38,7 +42,40 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
         )
     )
 
+    init {
+        watchMessages()
+    }
 
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun watchMessages() {
+        viewModelScope.launch {
+            conversationIdState.flatMapConcat {
+                if (it != 0L) {
+                    chatClient.conversation(it)
+                } else {
+                    emptyFlow()
+                }
+            }.stateIn(viewModelScope).collect {
+                conversation.value = it
+            }
+        }
+        viewModelScope.launch {
+            conversationIdState.flatMapConcat {
+                if (it != 0L) {
+                    chatClient.messages(it)
+                } else {
+                    emptyFlow()
+                }
+            }.stateIn(viewModelScope).collect {
+                messages.value = it
+            }
+        }
+
+    }
+    fun conversation(conversation: Long) {
+        conversationIdState.value = conversation
+    }
 
     fun mode(mode: InputMode) {
         inputState.update {
@@ -52,23 +89,29 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
         }
     }
 
+    fun sendWithAttachmentId(message: String, attachments: List<Long>) {
+        send(message, emptyList())
+    }
+
     fun send(message: String, attachments: List<Attachment>) {
         viewModelScope.launch {
             val oldState = inputState.value
             if (oldState.sendState == SendState.StateSending) {
                 return@launch
             }
+            val conversationId = conversationIdState.value
+            if (conversationId == 0L) {
+                inputState.update {
+                    it.copy(input = "", attachments = emptyList())
+                }
+                return@launch
+            }
             inputState.update {
                 it.copy(input = "", sendState = SendState.StateSending, attachments = emptyList())
             }
-
-            var currentConversation = conversation.value
-            if (currentConversation.id == 0L) {
-                currentConversation = chatClient.conversation()
-            }
             chatClient.send(
                 Message(
-                    conversation = currentConversation.id,
+                    conversation = conversationIdState.value,
                     content = message,
                     type = Message.MessageType.TypeHuman
                 )
@@ -106,6 +149,5 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
     fun retry() {
 
     }
-
 
 }

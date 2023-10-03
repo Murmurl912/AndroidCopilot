@@ -1,8 +1,9 @@
 package com.example.androidcopilot.ui
 
-import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,6 +13,7 @@ import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator
 import com.example.androidcopilot.ui.chat.home.HomeScreen
 import com.example.androidcopilot.ui.chat.message.MessageScreen
+import com.example.androidcopilot.ui.chat.message.MessageViewModel
 import com.example.androidcopilot.ui.theme.AndroidCopilotTheme
 
 @Composable
@@ -24,6 +26,8 @@ fun AndroidCopilotMain() {
             Navigator.processNavCommands(controller)
         }
         val conversationViewModel: ConversationListDrawerViewModel = hiltViewModel()
+        val conversations by conversationViewModel.conversations.collectAsState()
+
         NavHost(
             navController = controller,
             startDestination = AppScreens.HomeScreen.name
@@ -40,10 +44,20 @@ fun AndroidCopilotMain() {
                 route = AppScreens.MessageScreen.name,
                 arguments = AppScreens.MessageScreen.args
             ) {
-                val conversationId = it.arguments?.getLong(AppScreens.MessageScreen.ArgConversationId)
+                val conversation = it.arguments?.getLong(AppScreens.MessageScreen.ArgConversationId)
                     ?: 0
+                val message = it.arguments?.getString(AppScreens.MessageScreen.ArgSendMessage)
+                val attachments = it.arguments?.getLongArray(AppScreens.MessageScreen.ArgSendAttachment)
+                val viewModel: MessageViewModel = hiltViewModel()
+                LaunchedEffect(Unit) {
+                    if (conversation != 0L) {
+                        viewModel.conversation(conversation)
+                    }
+                    if (!message.isNullOrEmpty()) {
+                        viewModel.sendWithAttachmentId(message, attachments?.toList()?: emptyList<Long>())
+                    }
+                }
                 MessageScreen(
-                    conversationId,
                     conversationViewModel = conversationViewModel,
                     messageViewModel = hiltViewModel()
                 )

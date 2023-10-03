@@ -161,6 +161,7 @@ fun MessageInput(
                     if (state.input.isEmpty()) {
                         label()
                     }
+                    it()
                 }
                 IconButton(
                     onClick = {
@@ -304,7 +305,6 @@ fun MessageInput(
             systemInsets.getBottom(density).toDp()
         }
         val (imeState, imeMaxHeight) = KeyboardHeights.rememberKeyboardHeight()
-        println("ime state: $imeState $imeMaxHeight $imeHeight")
         val expectedPanelHeight = remember(state.mode, imeHeight, systemHeight, imeState, imeMaxHeight) {
             when (state.mode) {
                 InputMode.TextInput -> {

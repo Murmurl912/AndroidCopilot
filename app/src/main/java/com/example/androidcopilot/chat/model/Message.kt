@@ -52,3 +52,13 @@ data class Message(
     }
 
 }
+
+
+fun Message.isError(): Boolean {
+    return status == Message.MessageStatus.StatusError
+}
+
+fun Message.isCompleted(): Boolean {
+    return status == Message.MessageStatus.StatusError || status == Message.MessageStatus.StatusStopped ||
+            status == Message.MessageStatus.StatusSuccess
+}

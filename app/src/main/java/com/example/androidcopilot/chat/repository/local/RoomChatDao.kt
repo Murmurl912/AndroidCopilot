@@ -108,7 +108,7 @@ interface RoomChatDao {
             }
     }
 
-    @Query("select sum(token) " +
+    @Query("select COALESCE(sum(token),0) " +
             "from Message " +
             "where conversation =:conversationId " +
             "and status in (:messageStatuses)" +
@@ -145,4 +145,18 @@ interface RoomChatDao {
             null
         }
     }
+
+    @Query("select * from Conversation where messageCount == 0 limit 1")
+    fun findEmptyConversation(): Conversation?
+
+    @Transaction
+    suspend fun findEmptyConversationOrNewConversation(conversation: Conversation): Conversation {
+        val emptyConversation = findEmptyConversation()
+        if (emptyConversation != null) {
+            return emptyConversation
+        }
+        val id = newConversation(conversation)
+        return findConversationById(id)!!
+    }
+
 }

@@ -15,6 +15,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -55,7 +58,9 @@ object ChatModule {
     ): ChatClient {
         return OpenaiChatClient(
             openai,
-            chatRepository
+            chatRepository,
+            CoroutineScope(Dispatchers.Default + SupervisorJob()),
+            LogcatLogger
         )
     }
 }

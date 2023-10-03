@@ -8,10 +8,14 @@ interface ChatClient {
 
     suspend fun send(message: Message): Flow<Message>
 
-    fun messages(conversation: Conversation): Flow<List<Message>>
+    fun messages(conversationId: Long): Flow<List<Message>>
 
     suspend fun conversation(): Conversation
 
+    suspend fun conversation(id: Long): Flow<Conversation>
+
     fun conversations(): Flow<List<Conversation>>
+
+    suspend fun delete(conversation: Conversation)
 
 }

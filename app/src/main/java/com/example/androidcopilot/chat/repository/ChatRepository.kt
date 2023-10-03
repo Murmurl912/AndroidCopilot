@@ -22,13 +22,15 @@ interface ChatRepository {
 
     suspend fun newConversation(conversation: Conversation): Conversation
 
+    suspend fun findEmptyConversationOrNewConversation(conversation: Conversation): Conversation
+
     suspend fun deleteConversation(conversation: Conversation): Conversation?
 
     suspend fun updateConversation(conversation: Conversation): Conversation?
 
     suspend fun findConversationById(id: Long): Conversation?
 
-    fun messageListFlow(conversation: Conversation): Flow<List<Message>>
+    fun messageListFlow(conversationId: Long): Flow<List<Message>>
 
     suspend fun messages(conversation: Conversation, offset: Int, limit: Int): List<Message>
 

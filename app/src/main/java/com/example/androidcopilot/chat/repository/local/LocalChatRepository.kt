@@ -38,6 +38,10 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.findConversationById(id)!!
     }
 
+    override suspend fun findEmptyConversationOrNewConversation(conversation: Conversation): Conversation {
+        return roomChatDao.findEmptyConversationOrNewConversation(conversation)
+    }
+
     override suspend fun deleteConversation(conversation: Conversation): Conversation? {
         val deleted = roomChatDao.findConversationById(conversation.id)
         roomChatDao.deleteConversation(conversation)
@@ -53,8 +57,8 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.findConversationById(id)
     }
 
-    override fun messageListFlow(conversation: Conversation): Flow<List<Message>> {
-        return roomChatDao.conversationMessageFlow(conversation.id, 0, Int.MAX_VALUE)
+    override fun messageListFlow(conversationId: Long): Flow<List<Message>> {
+        return roomChatDao.conversationMessageFlow(conversationId, 0, Int.MAX_VALUE)
     }
 
     override suspend fun messages(
