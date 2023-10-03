@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.keyboard
+package com.example.androidcopilot.ui.theme.keyboard
 
 import android.content.Context
 import android.content.SharedPreferences

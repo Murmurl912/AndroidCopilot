@@ -57,4 +57,6 @@ object Dependencies {
     const val HlitComposeNavigation = "androidx.hilt:hilt-navigation-compose:${Versions.HlitComposeNavigation}"
     const val AndroidHlitCompiler = "com.google.dagger:hilt-android-compiler:${Versions.Hlit}"
     const val KtorAndroidClient =  "io.ktor:ktor-client-android:${Versions.KtorClientAndroid}"
+
+    const val ComposeWindowSizeClass = "androidx.compose.material3:material3-window-size-class"
 }

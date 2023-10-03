@@ -1,13 +1,13 @@
 package com.example.androidcopilot.ui
 
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.androidcopilot.ui.chat.conversation.ChatConversationViewModel
+import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawerViewModel
 import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator
 import com.example.androidcopilot.ui.chat.home.HomeScreen
@@ -23,7 +23,7 @@ fun AndroidCopilotMain() {
         LaunchedEffect(Unit) {
             Navigator.processNavCommands(controller)
         }
-        val conversationViewModel: ChatConversationViewModel = hiltViewModel()
+        val conversationViewModel: ConversationListDrawerViewModel = hiltViewModel()
         NavHost(
             navController = controller,
             startDestination = AppScreens.HomeScreen.name

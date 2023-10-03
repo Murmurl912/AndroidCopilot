@@ -7,24 +7,80 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Message
+import androidx.compose.material3.DismissibleNavigationDrawer
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.chat.model.Conversation
+import com.example.androidcopilot.ui.theme.LocalWindowSizeClass
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+@Composable
+fun ConversationListDrawer(
+    conversationViewModel: ConversationListDrawerViewModel,
+    content: @Composable () -> Unit
+) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val keyboardController = LocalSoftwareKeyboardController.current
+    LaunchedEffect(drawerState.currentValue) {
+        conversationViewModel.drawerOpenStateFlow.value = drawerState.currentValue == DrawerValue.Open
+        if (drawerState.currentValue == DrawerValue.Open) {
+            keyboardController?.hide()
+        }
+    }
+    LaunchedEffect(Unit) {
+        conversationViewModel.drawerCommands.collect { command ->
+            if (command.open && drawerState.targetValue != DrawerValue.Open) {
+                drawerState.open()
+            } else if (drawerState.targetValue != DrawerValue.Closed){
+                drawerState.close()
+            }
+        }
+    }
+    val windowSizeClass = LocalWindowSizeClass.current
+    when (windowSizeClass?.widthSizeClass) {
+        WindowWidthSizeClass.Expanded,
+        WindowWidthSizeClass.Medium -> {
+                DismissibleNavigationDrawer(drawerContent = {
+                    ConversationListDrawerSheet(conversationViewModel = conversationViewModel)
+                }, drawerState = drawerState) {
+                    content()
+                }
+            }
+        WindowWidthSizeClass.Compact, null -> {
+            ModalNavigationDrawer(drawerContent = {
+                ConversationListDrawerSheet(conversationViewModel = conversationViewModel)
+            }, drawerState = drawerState) {
+                content()
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationListDrawerSheet(
+internal fun ConversationListDrawerSheet(
     modifier: Modifier = Modifier,
-    conversationViewModel: ChatConversationViewModel
+    conversationViewModel: ConversationListDrawerViewModel
 ) {
     val conversation by conversationViewModel.currentConversation.collectAsState()
     val conversations by conversationViewModel.conversations.collectAsState()
@@ -39,7 +95,7 @@ fun ConversationListDrawerSheet(
 }
 
 @Composable
-fun ConversationList(
+internal fun ConversationList(
     modifier: Modifier = Modifier,
     conversation: Conversation? = null,
     conversations: List<Conversation> = emptyList(),
@@ -56,7 +112,8 @@ fun ConversationList(
         }
         items(conversations.size) {
             val item = conversations[it]
-            ConversationItem(Modifier,
+            ConversationItem(
+                Modifier,
                 item,
                 item == conversation) {
                 onClickConversation(item)
@@ -67,7 +124,7 @@ fun ConversationList(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConversationItem(
+internal fun ConversationItem(
     modifier: Modifier = Modifier,
     conversation: Conversation,
     selected: Boolean = false,
@@ -88,7 +145,7 @@ fun ConversationItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewConversationItem(
+internal fun NewConversationItem(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {}
 ) {
@@ -104,6 +161,7 @@ fun NewConversationItem(
         }
     )
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview

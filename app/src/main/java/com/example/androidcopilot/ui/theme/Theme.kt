@@ -56,15 +56,16 @@ fun AndroidCopilotTheme(
         else -> LightColorScheme
     }
 
+    val window = LocalWindow.current
     val view = LocalView.current
     SideEffect {
-        val window = (view.context as Activity).window
-        val insets = WindowCompat.getInsetsController(window, view)
-        window.statusBarColor = Color.Transparent.toArgb()
-        window.navigationBarColor = Color.Transparent.toArgb()
-        insets.isAppearanceLightStatusBars = !darkTheme
-        insets.isAppearanceLightNavigationBars = !darkTheme
-
+        if (window != null) {
+            val insets = WindowCompat.getInsetsController(window, view)
+            window.statusBarColor = Color.Transparent.toArgb()
+            window.navigationBarColor = Color.Transparent.toArgb()
+            insets.isAppearanceLightStatusBars = !darkTheme
+            insets.isAppearanceLightNavigationBars = !darkTheme
+        }
     }
 
     MaterialTheme(

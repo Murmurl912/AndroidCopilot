@@ -27,6 +27,8 @@ sealed class AppScreens(
 
     object HomeScreen: AppScreens("home")
 
+    object SettingScreen: AppScreens("setting")
+
 }
 
 private fun String.appendArgs(args: List<NamedNavArgument>): String {

@@ -104,7 +104,7 @@ dependencies {
 
     implementation(Dependencies.AallamOpenAi)
     implementation(Dependencies.KtorAndroidClient)
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.18.0")
+    implementation(Dependencies.ComposeWindowSizeClass)
 
     testImplementation(Dependencies.Junit)
     androidTestImplementation(Dependencies.AndroidxTestExtJunit)

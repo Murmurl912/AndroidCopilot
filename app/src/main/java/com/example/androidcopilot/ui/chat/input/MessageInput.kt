@@ -54,7 +54,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.chat.model.Attachment
-import com.example.androidcopilot.ui.keyboard.KeyboardHeights
+import com.example.androidcopilot.ui.theme.keyboard.KeyboardHeights
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
