@@ -58,6 +58,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
@@ -111,6 +112,10 @@ fun MessageInput(
     onResume: () -> Unit = {},
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    val voiceRecognizer = rememberAndroidVoiceRecognizer(
+        onSpeechChanged = {
+        onInputChange(it)
+    })
     Column(modifier) {
         Row(Modifier.padding(vertical = 12.dp)) {
             Spacer(Modifier.width(12.dp))
@@ -176,18 +181,35 @@ fun MessageInput(
                     }
                     it()
                 }
-                IconButton(
-                    onClick = {
-                        onModeChange(InputMode.VoiceInput)
-                    },
-                    modifier = Modifier
-                        .align(Alignment.Bottom)
-                        .size(40.dp)
-                ) {
-                    Icon(
-                        Icons.Default.KeyboardVoice,
-                        contentDescription = ""
-                    )
+                if (state.mode != InputMode.VoiceInput) {
+                    IconButton(
+                        onClick = {
+                            onModeChange(InputMode.VoiceInput)
+                        },
+                        modifier = Modifier
+                            .align(Alignment.Bottom)
+                            .size(40.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.KeyboardVoice,
+                            contentDescription = ""
+                        )
+                    }
+                } else if (voiceRecognizer.state == VoiceRecognizer.RecognizerState.StateStarted
+                    || voiceRecognizer.state == VoiceRecognizer.RecognizerState.StateRecognizing) {
+                    Box(
+                        Modifier
+                            .size(40.dp)
+                            .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
+                            .clip(CircleShape)
+                    ) {
+                        IconButton(onClick = {
+                            voiceRecognizer.stop()
+                        }) {
+                            Icon(Icons.Default.Stop, contentDescription = "")
+                        }
+                        CircularProgressIndicator(Modifier.size(40.dp))
+                    }
                 }
                 val isPressed by source.collectIsPressedAsState()
                 LaunchedEffect(isPressed) {
@@ -304,105 +326,37 @@ fun MessageInput(
             }
             Spacer(Modifier.width(12.dp))
         }
-
-        var inputPanelHeight by remember {
-            mutableStateOf(0.dp)
-        }
-        val density = LocalDensity.current
-        val imeInsets = WindowInsets.ime
-        val systemInsets = WindowInsets.systemBars
-        val imeHeight = with(density) {
-            imeInsets.getBottom(density).toDp()
-        }
-        val systemHeight = with(density) {
-            systemInsets.getBottom(density).toDp()
-        }
-        val (imeState, imeMaxHeight) = KeyboardHeights.rememberKeyboardHeight()
-        val expectedPanelHeight = remember(state.mode, imeHeight, systemHeight, imeState, imeMaxHeight) {
-            when (state.mode) {
-                InputMode.TextInput -> {
-                    when (imeState) {
-                        KeyboardHeights.ImeState.ImeShown -> {
-                            (imeHeight - systemHeight).coerceAtLeast(0.dp)
-                        }
-                        KeyboardHeights.ImeState.ImeHidden -> {
-                            if (inputPanelHeight > imeHeight - systemHeight) {
-                                inputPanelHeight
-                            } else {
-                                (imeHeight - systemHeight).coerceAtLeast(0.dp)
-                            }
-                        }
-                        KeyboardHeights.ImeState.ImeShowing -> {
-                            if (inputPanelHeight > imeHeight - systemHeight) {
-                                inputPanelHeight
-                            } else {
-                                (imeHeight - systemHeight).coerceAtLeast(0.dp)
-                            }
-                        }
-                        KeyboardHeights.ImeState.ImeHiding -> {
-                            (imeHeight - systemHeight).coerceAtLeast(0.dp)
-                        }
-                    }
-                }
-                InputMode.VoiceInput, InputMode.PickAttachment -> {
-                    // ime will hide or show
-                    imeMaxHeight
-                }
-            }
-        }
-        Box(modifier = Modifier
-            .onSizeChanged {
-                with(density) {
-                    inputPanelHeight = it.height.toDp()
-                }
-            }
-            .height(expectedPanelHeight)
-        ) {
+        KeyboardAwareInputPanel(mode = state.mode) {
             when (state.mode) {
                 InputMode.VoiceInput -> {
                     LaunchedEffect(Unit) {
-                        awaitFrame()
                         keyboardController?.hide()
+                        voiceRecognizer.start()
                     }
-                    Column(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.SpaceEvenly
-                    ) {
+                    VoiceInput(Modifier.fillMaxSize(),
+                        onPermissionDenied = {
+                            Column(
+                                Modifier
+                                    .padding(20.dp)
+                                    .fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally) {
+                                Spacer(modifier = Modifier.weight(1F))
+                                Text(
+                                    text = "To use voice input, you need allow app to access your microphone.",
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.weight(1F))
 
-                        val audioRecordPermission =
-                            rememberPermissionState(permission = Manifest.permission.RECORD_AUDIO)
-                        if (audioRecordPermission.status.isGranted) {
-                            var waveformProgress by remember { mutableStateOf(0F) }
-
-                            AudioWaveform(
-                                progress = waveformProgress,
-                                amplitudes = listOf(
-                                    1, 2, 3, 4, 2, 3, 4, 3, 2, 3, 2, 1
-                                ),
-                                spikePadding = 2.dp,
-                                onProgressChange = { waveformProgress = it },
-                                modifier = Modifier.height(20.dp)
-                            )
-                        } else  {
-                            Text(text = "To use voice input, you need allow app to access your microphone.")
-                            Button(onClick = {
-                                audioRecordPermission.launchPermissionRequest()
-                            }) {
-                                Text(text = "Grant Microphone Access")
+                                Button(onClick = {
+                                    voiceRecognizer.requestPermission()
+                                }) {
+                                    Text(text = "Grant Microphone Access")
+                                }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.weight(1F))
-                        IconButton(onClick = {
-                            onModeChange(InputMode.TextInput)
-                            keyboardController?.show()
-                        }) {
-                            Icon(Icons.Default.KeyboardAlt, contentDescription = "")
-                        }
-                    }
+                        },
+                        onSwitchInput = onModeChange
+                    )
                 }
                 InputMode.PickAttachment -> {
                     LaunchedEffect(Unit) {
@@ -413,135 +367,75 @@ fun MessageInput(
                     }
                 }
                 InputMode.TextInput -> {
+
                 }
             }
+
         }
     }
 }
 
-
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun VoiceInput(
-    modifier: Modifier = Modifier,
-    onEnterTextInput: () -> Unit = {}
+fun KeyboardAwareInputPanel(
+    mode: InputMode,
+    content: @Composable () -> Unit
 ) {
-    Column(modifier) {
-        Box(Modifier.weight(1F)) {
-            val audioRecordPermission =
-                rememberPermissionState(permission = Manifest.permission.RECORD_AUDIO)
-            if (audioRecordPermission.status.isGranted) {
-                val context = LocalContext.current
-                var amplitudes by remember {
-                    mutableStateOf(emptyList<Int>())
-                }
-                DisposableEffect(Unit) {
-
-                    val amplituda = Amplituda(context)
-                    val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
-
-                    speechRecognizer.setRecognitionListener(object: RecognitionListener {
-
-                        override fun onReadyForSpeech(params: Bundle?) {
-                            println("speech ready")
-                        }
-
-                        override fun onBeginningOfSpeech() {
-                            println("speech start")
-
-                        }
-
-                        override fun onRmsChanged(rmsdB: Float) {
-                            println("speech rmsdb: $rmsdB")
-                        }
-
-                        override fun onBufferReceived(buffer: ByteArray?) {
-                            println("speech buffer: $buffer")
-                            if (buffer != null) {
-                                amplituda.processAudio(buffer)
-                                    .get({ result ->
-                                        result?.amplitudesAsList()?.let {
-                                            amplitudes = it
-                                        }
-                                    }, {
-                                        println("speech error amplitude: $it")
-                                    })
-                            }
-                        }
-
-                        override fun onEndOfSpeech() {
-                            println("speech end")
-
-                        }
-
-                        override fun onError(error: Int) {
-                            println("speech error: $error")
-
-                        }
-
-                        override fun onResults(results: Bundle?) {
-                            val speeches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                                ?: emptyList<String>()
-                            println("speech: $speeches")
-                        }
-
-                        override fun onPartialResults(partialResults: Bundle?) {
-                            val speeches  =
-                                partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                                    ?: emptyList<String>()
-                            println("speech: $speeches")
-                        }
-
-                        override fun onEvent(eventType: Int, params: Bundle?) {
-
-                        }
-                    })
-                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+    var inputPanelHeight by remember {
+        mutableStateOf(0.dp)
+    }
+    val density = LocalDensity.current
+    val imeInsets = WindowInsets.ime
+    val systemInsets = WindowInsets.systemBars
+    val imeHeight = with(density) {
+        imeInsets.getBottom(density).toDp()
+    }
+    val systemHeight = with(density) {
+        systemInsets.getBottom(density).toDp()
+    }
+    val (imeState, imeMaxHeight) = KeyboardHeights.rememberKeyboardHeight()
+    val expectedPanelHeight = remember(mode, imeHeight, systemHeight, imeState, imeMaxHeight) {
+        when (mode) {
+            InputMode.TextInput -> {
+                when (imeState) {
+                    KeyboardHeights.ImeState.ImeShown -> {
+                        (imeHeight - systemHeight).coerceAtLeast(0.dp)
                     }
-                    speechRecognizer.startListening(intent)
-                    onDispose {
-                        speechRecognizer.cancel()
-                        speechRecognizer.destroy()
+                    KeyboardHeights.ImeState.ImeHidden -> {
+                        if (inputPanelHeight > imeHeight - systemHeight) {
+                            inputPanelHeight
+                        } else {
+                            (imeHeight - systemHeight).coerceAtLeast(0.dp)
+                        }
+                    }
+                    KeyboardHeights.ImeState.ImeShowing -> {
+                        if (inputPanelHeight > imeHeight - systemHeight) {
+                            inputPanelHeight
+                        } else {
+                            (imeHeight - systemHeight).coerceAtLeast(0.dp)
+                        }
+                    }
+                    KeyboardHeights.ImeState.ImeHiding -> {
+                        (imeHeight - systemHeight).coerceAtLeast(0.dp)
                     }
                 }
-                var waveformProgress by remember { mutableStateOf(0F) }
-                AudioWaveform(
-                    progress = waveformProgress,
-                    amplitudes = amplitudes,
-                    spikePadding = 2.dp,
-                    onProgressChange = { waveformProgress = it },
-                    modifier = Modifier.height(20.dp)
-                )
-
-            } else  {
-                Column(Modifier.align(Alignment.Center)) {
-                    Text(text = "To use voice input, you need allow app to access your microphone.")
-                    Button(onClick = {
-                        audioRecordPermission.launchPermissionRequest()
-                    }) {
-                        Text(text = "Grant Microphone Access")
-                    }
-                }
-
+            }
+            InputMode.VoiceInput, InputMode.PickAttachment -> {
+                // ime will hide or show
+                imeMaxHeight
             }
         }
-        IconButton(onClick = onEnterTextInput, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Icon(Icons.Default.KeyboardAlt, contentDescription = "")
-        }
     }
+    Box(modifier = Modifier
+        .onSizeChanged {
+            with(density) {
+                inputPanelHeight = it.height.toDp()
+            }
+        }
+        .height(expectedPanelHeight)
+    ) {
 
-}
-
-class VoiceInputState {
-
-}
-@Preview
-@Composable
-fun VoiceInputPreview() {
-    VoiceInput(Modifier.fillMaxWidth())
+        content()
+    }
 }
 
 @Preview
