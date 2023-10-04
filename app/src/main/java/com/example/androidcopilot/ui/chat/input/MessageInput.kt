@@ -355,7 +355,6 @@ fun MessageInput(
                             }
 
                         },
-                        onSwitchInput = onModeChange
                     )
                 }
                 InputMode.PickAttachment -> {

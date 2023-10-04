@@ -14,12 +14,12 @@ import com.example.androidcopilot.navigation.Navigator
 import com.example.androidcopilot.ui.chat.home.HomeScreen
 import com.example.androidcopilot.ui.chat.message.MessageScreen
 import com.example.androidcopilot.ui.chat.message.MessageViewModel
-import com.example.androidcopilot.ui.theme.AndroidCopilotTheme
+import com.example.compose.AppTheme
 
 @Composable
 fun AndroidCopilotMain() {
 
-    AndroidCopilotTheme {
+    AppTheme {
 
         val controller = rememberNavController()
         LaunchedEffect(Unit) {

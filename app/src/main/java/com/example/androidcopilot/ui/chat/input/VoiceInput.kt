@@ -237,6 +237,7 @@ fun rememberAndroidVoiceRecognizer(
     val voiceRecognizer = remember {
         AndroidSpeechRecognizer(context)
     }
+    rememberScrollState()
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = {
@@ -277,8 +278,7 @@ fun VoiceInput(
     },
     onStart: () -> Unit = {
         recognizer.start()
-    },
-    onSwitchInput: (InputMode) -> Unit = {}
+    }
 ) {
     if (recognizer.permissionGranted) {
         Column(modifier) {
@@ -304,11 +304,6 @@ fun VoiceInput(
             }
             Text(text = recognizer.speech)
             Spacer(modifier = Modifier.weight(1F))
-            IconButton(onClick = {
-                onSwitchInput(InputMode.TextInput)
-            }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Icon(Icons.Default.Keyboard, contentDescription = "")
-            }
         }
 
     } else {
