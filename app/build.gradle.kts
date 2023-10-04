@@ -106,6 +106,8 @@ dependencies {
     implementation(Dependencies.KtorAndroidClient)
     implementation(Dependencies.ComposeWindowSizeClass)
 
+    implementation(Dependencies.LincollincolAmplituda)
+
     testImplementation(Dependencies.Junit)
     androidTestImplementation(Dependencies.AndroidxTestExtJunit)
     androidTestImplementation(Dependencies.AndroidTestEspressoCore)

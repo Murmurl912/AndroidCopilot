@@ -59,4 +59,6 @@ object Dependencies {
     const val KtorAndroidClient =  "io.ktor:ktor-client-android:${Versions.KtorClientAndroid}"
 
     const val ComposeWindowSizeClass = "androidx.compose.material3:material3-window-size-class"
+
+    const val LincollincolAmplituda = "com.github.lincollincol:amplituda:${Versions.LincollincolAmplituda}"
 }

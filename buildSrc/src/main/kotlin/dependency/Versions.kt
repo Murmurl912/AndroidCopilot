@@ -1,6 +1,7 @@
 package dependency
 
 object Versions {
+    const val LincollincolAmplituda = "2.2.2"
     const val KtorClientAndroid = "2.3.4"
     const val HlitComposeNavigation = "1.0.0"
     const val NavigationCompose = "2.6.0"

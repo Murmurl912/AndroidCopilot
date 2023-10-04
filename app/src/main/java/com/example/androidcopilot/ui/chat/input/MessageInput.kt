@@ -1,6 +1,11 @@
 package com.example.androidcopilot.ui.chat.input
 
 import android.Manifest
+import android.content.Intent
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -12,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
@@ -37,6 +43,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
@@ -60,6 +68,11 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.linc.audiowaveform.AudioWaveform
 import kotlinx.coroutines.android.awaitFrame
+import linc.com.amplituda.Amplituda
+import linc.com.amplituda.AmplitudaResult
+import linc.com.amplituda.callback.AmplitudaErrorListener
+import linc.com.amplituda.callback.AmplitudaSuccessListener
+import java.util.Locale
 
 
 enum class SendState {
@@ -406,6 +419,130 @@ fun MessageInput(
     }
 }
 
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun VoiceInput(
+    modifier: Modifier = Modifier,
+    onEnterTextInput: () -> Unit = {}
+) {
+    Column(modifier) {
+        Box(Modifier.weight(1F)) {
+            val audioRecordPermission =
+                rememberPermissionState(permission = Manifest.permission.RECORD_AUDIO)
+            if (audioRecordPermission.status.isGranted) {
+                val context = LocalContext.current
+                var amplitudes by remember {
+                    mutableStateOf(emptyList<Int>())
+                }
+                DisposableEffect(Unit) {
+
+                    val amplituda = Amplituda(context)
+                    val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+
+                    speechRecognizer.setRecognitionListener(object: RecognitionListener {
+
+                        override fun onReadyForSpeech(params: Bundle?) {
+                            println("speech ready")
+                        }
+
+                        override fun onBeginningOfSpeech() {
+                            println("speech start")
+
+                        }
+
+                        override fun onRmsChanged(rmsdB: Float) {
+                            println("speech rmsdb: $rmsdB")
+                        }
+
+                        override fun onBufferReceived(buffer: ByteArray?) {
+                            println("speech buffer: $buffer")
+                            if (buffer != null) {
+                                amplituda.processAudio(buffer)
+                                    .get({ result ->
+                                        result?.amplitudesAsList()?.let {
+                                            amplitudes = it
+                                        }
+                                    }, {
+                                        println("speech error amplitude: $it")
+                                    })
+                            }
+                        }
+
+                        override fun onEndOfSpeech() {
+                            println("speech end")
+
+                        }
+
+                        override fun onError(error: Int) {
+                            println("speech error: $error")
+
+                        }
+
+                        override fun onResults(results: Bundle?) {
+                            val speeches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                                ?: emptyList<String>()
+                            println("speech: $speeches")
+                        }
+
+                        override fun onPartialResults(partialResults: Bundle?) {
+                            val speeches  =
+                                partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                                    ?: emptyList<String>()
+                            println("speech: $speeches")
+                        }
+
+                        override fun onEvent(eventType: Int, params: Bundle?) {
+
+                        }
+                    })
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+                    }
+                    speechRecognizer.startListening(intent)
+                    onDispose {
+                        speechRecognizer.cancel()
+                        speechRecognizer.destroy()
+                    }
+                }
+                var waveformProgress by remember { mutableStateOf(0F) }
+                AudioWaveform(
+                    progress = waveformProgress,
+                    amplitudes = amplitudes,
+                    spikePadding = 2.dp,
+                    onProgressChange = { waveformProgress = it },
+                    modifier = Modifier.height(20.dp)
+                )
+
+            } else  {
+                Column(Modifier.align(Alignment.Center)) {
+                    Text(text = "To use voice input, you need allow app to access your microphone.")
+                    Button(onClick = {
+                        audioRecordPermission.launchPermissionRequest()
+                    }) {
+                        Text(text = "Grant Microphone Access")
+                    }
+                }
+
+            }
+        }
+        IconButton(onClick = onEnterTextInput, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Icon(Icons.Default.KeyboardAlt, contentDescription = "")
+        }
+    }
+
+}
+
+class VoiceInputState {
+
+}
+@Preview
+@Composable
+fun VoiceInputPreview() {
+    VoiceInput(Modifier.fillMaxWidth())
+}
 
 @Preview
 @Composable
