@@ -1,15 +1,19 @@
 package com.example.androidcopilot.ui.chat.message
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
@@ -56,10 +60,11 @@ import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawerViewModel
 import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawer
-import com.example.androidcopilot.ui.chat.input.MessageInput
-import com.example.androidcopilot.ui.theme.LocalWindowSizeClass
+import com.example.androidcopilot.ui.chat.input.TextSpeechInput
+import com.example.androidcopilot.ui.chat.input.rememberTextSpeechInputState
 
-@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("UnrememberedMutableState")
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MessageScreen(
     conversationViewModel: ConversationListDrawerViewModel,
@@ -67,7 +72,6 @@ fun MessageScreen(
 ) {
     val conversation by messageViewModel.conversation.collectAsState()
     val messages by messageViewModel.messages.collectAsState()
-    val inputState by messageViewModel.inputState.collectAsState()
     var showMenu by remember {
         mutableStateOf(false)
     }
@@ -77,6 +81,7 @@ fun MessageScreen(
     var isDeletingConversation by remember {
         mutableStateOf(false)
     }
+    val isSendingMessage by messageViewModel.isSendingMessage.collectAsState()
     ConversationListDrawer(conversationViewModel = conversationViewModel) {
         Scaffold(
             topBar = {
@@ -112,20 +117,19 @@ fun MessageScreen(
                 })
             }
         ) {
-            Column(
-                Modifier.padding(it)
-            ) {
+            Column(Modifier.padding(it).consumeWindowInsets(it)) {
                 MessageList(modifier = Modifier
                     .weight(1F)
                     .fillMaxWidth(), messages = messages)
-                MessageInput(
-                    modifier = Modifier,
-                    state = inputState,
-                    onModeChange = messageViewModel::mode,
-                    onInputChange = messageViewModel::input,
-                    onSendMessage = messageViewModel::send,
-                    onPause = messageViewModel::pause,
-                    onRetry = messageViewModel::retry
+                val textSpeechInputState = rememberTextSpeechInputState(
+                    isSending = isSendingMessage,
+                    onSend = { input ->
+                        messageViewModel.send(input, emptyList())
+                    }
+                )
+                TextSpeechInput(
+                    modifier = Modifier.fillMaxWidth(),
+                    inputState = textSpeechInputState,
                 )
             }
             MessageDeleteDialog(show = showDelete, onDismissRequest = {

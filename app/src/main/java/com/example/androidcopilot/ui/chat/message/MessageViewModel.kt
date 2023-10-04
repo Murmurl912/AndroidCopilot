@@ -1,22 +1,21 @@
 package com.example.androidcopilot.ui.chat.message
 
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.androidcopilot.chat.ChatClient
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
-import com.example.androidcopilot.ui.chat.input.InputMode
-import com.example.androidcopilot.ui.chat.input.MessageInputState
-import com.example.androidcopilot.ui.chat.input.SendState
+import com.example.androidcopilot.ui.chat.input.InputValue
+import com.example.androidcopilot.ui.chat.input.TextSpeechInputState
+import com.example.androidcopilot.ui.chat.input.asText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.io.encoding.Base64
@@ -34,15 +33,8 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
     val messages: MutableStateFlow<List<Message>> = MutableStateFlow(
         emptyList()
     )
-
-    val inputState = MutableStateFlow(
-        MessageInputState(
-            "",
-            InputMode.TextInput,
-            SendState.StateIdle,
-            emptyList()
-        )
-    )
+    private val sendMessageState = MutableStateFlow(false)
+    val isSendingMessage = sendMessageState.asStateFlow()
 
     init {
         watchMessages()
@@ -79,75 +71,55 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
         conversationIdState.value = conversation
     }
 
-    fun mode(mode: InputMode) {
-        inputState.update {
-            it.copy(mode = mode)
-        }
-    }
-
-    fun input(text: String) {
-        inputState.update {
-            it.copy(input = text)
-        }
-    }
-
     @OptIn(ExperimentalEncodingApi::class)
     fun sendWithAttachmentId(message: String, attachments: List<Long>) {
         val messageDecoded = Base64.decode(message)
             .decodeToString()
-        send(messageDecoded, emptyList())
+        send(InputValue.TextInputValue(messageDecoded), emptyList())
     }
 
-    fun send(message: String, attachments: List<Attachment>) {
+    fun send(input: InputValue, attachments: List<Attachment>): Boolean {
+        if (!sendMessageState.compareAndSet(false, true)) {
+            return false
+        }
         viewModelScope.launch {
-            val oldState = inputState.value
-            if (oldState.sendState == SendState.StateSending) {
-                return@launch
-            }
             val conversationId = conversationIdState.value
             if (conversationId == 0L) {
-                inputState.update {
-                    it.copy(input = "", attachments = emptyList())
-                }
                 return@launch
             }
-            inputState.update {
-                it.copy(input = "", sendState = SendState.StateSending, attachments = emptyList())
+            if (!sendMessageState.compareAndSet(false, true)) {
+                return@launch
             }
             chatClient.send(
                 Message(
                     conversation = conversationIdState.value,
-                    content = message,
+                    content = input.asText(),
                     type = Message.MessageType.TypeHuman
                 )
             ).collect {
                 when (it.status) {
                     Message.MessageStatus.StatusSuccess -> {
-                        inputState.update {
-                            it.copy(sendState = SendState.StateIdle)
-                        }
+                        sendMessageState.value = false
                     }
                     Message.MessageStatus.StatusError -> {
-                        inputState.update {
-                            it.copy(sendState = SendState.StateError)
-                        }
+                        sendMessageState.value = false
                     }
                     Message.MessageStatus.StatusStopped -> {
-                        inputState.update {
-                            it.copy(sendState = SendState.StatePause)
-                        }
+                        sendMessageState.value = false
+
                     }
                     else -> {
-                        inputState.update {
-                            it.copy(sendState = SendState.StateSending)
-                        }
+                        sendMessageState.value = true
                     }
                 }
             }
+        }.invokeOnCompletion {
+            sendMessageState.value = false
         }
+        return true
     }
 
-    fun pause() {
+    fun stop() {
 
     }
 

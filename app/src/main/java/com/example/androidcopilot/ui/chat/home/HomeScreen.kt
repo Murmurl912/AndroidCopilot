@@ -1,8 +1,15 @@
 package com.example.androidcopilot.ui.chat.home
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.MoreVert
@@ -18,16 +25,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawer
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawerViewModel
-import com.example.androidcopilot.ui.chat.input.MessageInput
+import com.example.androidcopilot.ui.chat.input.TextSpeechInput
+import com.example.androidcopilot.ui.chat.input.rememberTextSpeechInputState
 import com.example.androidcopilot.ui.chat.message.MessageList
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     homeViewModel: HomeViewModel,
     conversationViewModel: ConversationListDrawerViewModel
 ) {
-    val inputState by homeViewModel.inputState.collectAsState()
+    val isSendingMessage by homeViewModel.isSendingMessage.collectAsState()
 
     ConversationListDrawer(conversationViewModel = conversationViewModel) {
         Scaffold(
@@ -47,18 +55,21 @@ fun HomeScreen(
                 })
             }
         ) {
-            Column(
-                Modifier.padding(it)
+            Column(Modifier.padding(it)
+                .consumeWindowInsets(it)
             ) {
                 MessageList(modifier = Modifier
                     .weight(1F)
                     .fillMaxWidth(), messages = emptyList())
-                MessageInput(
-                    modifier = Modifier,
-                    state = inputState,
-                    onModeChange = homeViewModel::mode,
-                    onInputChange = homeViewModel::input,
-                    onSendMessage = homeViewModel::send,
+                val textSpeechInputState = rememberTextSpeechInputState(
+                    isSending = isSendingMessage,
+                    onSend = { input ->
+                        homeViewModel.send(input, emptyList())
+                    }
+                )
+                TextSpeechInput(
+                    modifier = Modifier.fillMaxWidth(),
+                    inputState = textSpeechInputState,
                 )
             }
         }
