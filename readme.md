@@ -8,12 +8,15 @@
 
 目前支持基本聊天、语音输入和会话管理。
 
-![Untitled](art/text-chat.png)
 
-![Untitled](art/voice-chat.png)
 
-![Untitled](art/conversation.png)
 
+
+
+
+
+| ![Untitled](art/text-chat.png) | ![Untitled](art/voice-chat.png) | ![Untitled](art/conversation.png) |
+|--------------------------------|---------------------------------|-----------------------------------|
 ![Untitled](art/conversation-drawer.png)
 
 ### The Plans
