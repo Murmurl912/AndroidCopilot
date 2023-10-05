@@ -30,6 +30,7 @@ sealed interface AppScreens {
         override val args: List<NamedNavArgument> = listOf(
             navArgument(ArgSendMessage) {
                 type = NavType.StringType
+                defaultValue = ""
             },
             navArgument(ArgSendAttachment) {
                 type = NavType.LongArrayType

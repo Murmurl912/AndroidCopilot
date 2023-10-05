@@ -84,8 +84,7 @@ class AndroidSpeechRecognizer(
 
         override fun onError(error: Int) {
             log { "on speech error: $error" }
-            recognizerState.value = RecognizerState.Stopped
-            speechRecognizer?.stopListening()
+            stop()
         }
 
         override fun onResults(results: Bundle?) {
