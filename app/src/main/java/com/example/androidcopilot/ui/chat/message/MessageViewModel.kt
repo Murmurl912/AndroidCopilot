@@ -1,5 +1,6 @@
 package com.example.androidcopilot.ui.chat.message
 
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.io.encoding.Base64
@@ -35,11 +38,12 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
     )
     private val sendMessageState = MutableStateFlow(false)
     val isSendingMessage = sendMessageState.asStateFlow()
+    private val scrollCommandState = MutableStateFlow<ScrollCommand>(ScrollCommand.Noop)
+    val scrollCommand = scrollCommandState.asStateFlow()
 
     init {
         watchMessages()
     }
-
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun watchMessages() {
@@ -62,6 +66,19 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
                     emptyFlow()
                 }
             }.collect {
+                val lastMessage = it.lastOrNull()
+                val oldLastMessage = messages.value.lastOrNull()
+                if (lastMessage?.id != oldLastMessage?.id) {
+                    // new message receive, scroll to bottom
+                    scrollCommandState.value = ScrollCommand.ScrollTo(
+                        it.size
+                    )
+                } else if (lastMessage != oldLastMessage) {
+                    // content changed,
+                    scrollCommandState.value = ScrollCommand.ScrollTo(
+                        it.size
+                    )
+                }
                 messages.value = it
             }
         }
@@ -124,4 +141,13 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
 
     }
 
+
+    sealed interface ScrollCommand {
+
+        object Noop: ScrollCommand
+
+        // cannot use data class
+        class ScrollTo(val index: Int, val offset: Int = 0, stickUntilScrolled: Boolean = true): ScrollCommand
+
+    }
 }

@@ -55,12 +55,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
@@ -96,6 +99,8 @@ class TextSpeechInputState internal constructor(
     internal var isMicPermissionGranted by mutableStateOf(false)
     internal var micPermissionLauncher: ActivityResultLauncher<String>? = null
     internal var requestMicPermissionResultCallback: (Boolean) -> Unit = { isMicPermissionGranted = it }
+    @OptIn(ExperimentalComposeUiApi::class)
+    internal var localSoftwareKeyboardController: SoftwareKeyboardController? = null
 
     @SuppressLint("ComposableNaming")
     @Composable
@@ -112,6 +117,13 @@ class TextSpeechInputState internal constructor(
         ) {
             requestMicPermissionResultCallback(it)
         }
+    }
+
+    @SuppressLint("ComposableNaming")
+    @OptIn(ExperimentalComposeUiApi::class)
+    @Composable
+    internal fun rememberSoftkeyboard() {
+        localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
     }
 
     internal fun onRequestMicPermission() {
@@ -157,8 +169,10 @@ class TextSpeechInputState internal constructor(
         speechRecognizer.stop()
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     fun onStartSend() {
-        sendActionHandler(
+        localSoftwareKeyboardController?.hide()
+        val sent = sendActionHandler(
             when (inputMethod) {
                 InputMethod.Speech -> {
                     InputValue.SpeechInputValue(speechRecognizer.speech.value)
@@ -168,6 +182,9 @@ class TextSpeechInputState internal constructor(
                 }
             }
         )
+        if (sent) {
+            inputValue = TextFieldValue()
+        }
     }
 
     fun onStopSend() {
@@ -218,6 +235,7 @@ fun rememberTextSpeechInputState(
         )
     }
     state.rememberMicPermission()
+    state.rememberSoftkeyboard()
     LaunchedEffect(isSending) {
         state.isSendingMessage = isSending
     }

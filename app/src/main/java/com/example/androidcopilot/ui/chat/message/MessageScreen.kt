@@ -2,6 +2,8 @@ package com.example.androidcopilot.ui.chat.message
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.DragInteraction
+import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -47,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,9 +63,15 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawerViewModel
 import com.example.androidcopilot.chat.model.Message
+import com.example.androidcopilot.chat.model.isCompleted
 import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawer
 import com.example.androidcopilot.ui.chat.input.TextSpeechInput
 import com.example.androidcopilot.ui.chat.input.rememberTextSpeechInputState
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filterIsInstance
 
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -117,10 +127,16 @@ fun MessageScreen(
                 })
             }
         ) {
-            Column(Modifier.padding(it).consumeWindowInsets(it)) {
+            Column(
+                Modifier
+                    .padding(it)
+                    .consumeWindowInsets(it)) {
                 MessageList(modifier = Modifier
                     .weight(1F)
-                    .fillMaxWidth(), messages = messages)
+                    .fillMaxWidth(),
+                    messages = messages,
+                    messageViewModel.scrollCommand
+                )
                 val textSpeechInputState = rememberTextSpeechInputState(
                     isSending = isSendingMessage,
                     onSend = { input ->
@@ -151,11 +167,33 @@ fun MessageScreen(
 fun MessageList(
     modifier: Modifier = Modifier,
     messages: List<Message> = emptyList(),
+    scrollCommand: Flow<MessageViewModel.ScrollCommand> = remember {
+        emptyFlow()
+    }
 ) {
+    val lazyListState = rememberLazyListState()
+    LaunchedEffect(lazyListState) {
+        lazyListState.interactionSource
+            .interactions
+            .filterIsInstance<DragInteraction>()
+            .collect {
+                when (it) {
+                    is DragInteraction.Start -> {
+
+                    }
+                }
+            }
+    }
 
     LazyColumn(modifier,
+        state = lazyListState,
         contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item("start-item") {
+            Spacer(modifier = Modifier
+                .height(1.dp)
+                .fillMaxWidth())
+        }
         items(messages.size, {messages[it].id}, {
             messages[it]::class.simpleName
         }) {
@@ -192,6 +230,26 @@ fun MessageList(
                         Modifier.fillMaxWidth(),
                         message = message
                     )
+                }
+            }
+        }
+        item("end-item") {
+            Spacer(modifier = Modifier
+                .height(1.dp)
+                .fillMaxWidth())
+        }
+    }
+
+    LaunchedEffect(scrollCommand) {
+        scrollCommand.collect {
+            when (it) {
+                MessageViewModel.ScrollCommand.Noop -> {
+                    // noop
+                }
+                is MessageViewModel.ScrollCommand.ScrollTo -> {
+                    val index = (it.index - 1).coerceAtLeast(0)
+                    lazyListState.scrollToItem(index.coerceAtLeast(0), it.offset)
+                    lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
                 }
             }
         }
