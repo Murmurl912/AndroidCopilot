@@ -1,5 +1,11 @@
 package com.example.androidcopilot.ui.chat.input
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -14,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,19 +29,25 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoMode
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,25 +60,29 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
 import lerpF
 import toPxf
 
 import kotlin.random.Random
 
 
-class TextSpeechInputState(
-    private val speechRecognizer: ISpeechRecognizer) {
+class TextSpeechInputState internal constructor(
+    private val speechRecognizer: ISpeechRecognizer
+) {
 
     var inputMethod by mutableStateOf(InputMethod.Keyboard)
         internal set
 
-    val isVoiceActivated: Boolean
-        get() = speechRecognizer.state.value != RecognizerState.Stopped
+    var isVoiceActivated: Boolean by mutableStateOf(false)
+        internal set
 
     var isSendingMessage by mutableStateOf(false)
         internal set
@@ -76,6 +93,37 @@ class TextSpeechInputState(
     var sendActionHandler: (InputValue) -> Boolean = { false }
     var stopSendActionHandler: () -> Unit = {}
 
+    internal var isMicPermissionGranted by mutableStateOf(false)
+    internal var micPermissionLauncher: ActivityResultLauncher<String>? = null
+    internal var requestMicPermissionResultCallback: (Boolean) -> Unit = { isMicPermissionGranted = it }
+
+    @SuppressLint("ComposableNaming")
+    @Composable
+    internal fun rememberMicPermission() {
+        val context = LocalContext.current
+        val currentState = LocalLifecycleOwner.current.lifecycle.currentState
+        LaunchedEffect(currentState) {
+            if (currentState == Lifecycle.State.RESUMED) {
+                isMicPermissionGranted = context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        micPermissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) {
+            requestMicPermissionResultCallback(it)
+        }
+    }
+
+    internal fun onRequestMicPermission() {
+        requestMicPermissionResultCallback = {
+            isMicPermissionGranted = it
+            if (it) {
+                onStartSpeech()
+            }
+        }
+        micPermissionLauncher?.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
     fun onInputTextChange(value: TextFieldValue) {
         inputValue = value
     }
@@ -84,11 +132,25 @@ class TextSpeechInputState(
         inputMethod = method
         if (inputMethod == InputMethod.Speech) {
             onStartSpeech()
+        } else {
+            speechRecognizer.stop()
         }
     }
 
     fun onStartSpeech() {
         speechRecognizer.start()
+    }
+
+    fun onSpeechStarted() {
+        isVoiceActivated = true
+    }
+
+    fun onSpeechEnded() {
+        isVoiceActivated = false
+        val speech = speechRecognizer.speech.value
+        if (speech.isNotEmpty()) {
+            onStartSend()
+        }
     }
 
     fun onStopSpeech() {
@@ -99,7 +161,7 @@ class TextSpeechInputState(
         sendActionHandler(
             when (inputMethod) {
                 InputMethod.Speech -> {
-                    InputValue.SpeechInputValue("")
+                    InputValue.SpeechInputValue(speechRecognizer.speech.value)
                 }
                 InputMethod.Keyboard -> {
                     InputValue.TextInputValue(inputValue.text)
@@ -155,11 +217,23 @@ fun rememberTextSpeechInputState(
             speechRecognizer
         )
     }
+    state.rememberMicPermission()
     LaunchedEffect(isSending) {
         state.isSendingMessage = isSending
     }
     LaunchedEffect(textInput) {
         state.inputValue = textInput
+    }
+    val speechState by speechRecognizer.state
+    LaunchedEffect(speechState) {
+        when (speechState) {
+            RecognizerState.Started -> {
+                state.onSpeechStarted()
+            }
+            RecognizerState.Stopped -> {
+                state.onSpeechEnded()
+            }
+        }
     }
     state.stopSendActionHandler = onStop
     state.sendActionHandler = onSend
@@ -195,8 +269,9 @@ fun TextSpeechInput(
         ) {
             when (inputState.inputMethod) {
                 TextSpeechInputState.InputMethod.Speech -> {
-                    TextButton(
-                        onClick = {
+                    FilledIconToggleButton(
+                        checked = false,
+                        onCheckedChange = {
                             inputState.onChangeInputMethod(TextSpeechInputState.InputMethod.Keyboard)
                         },
                         modifier = Modifier.size(40.dp)) {
@@ -205,12 +280,21 @@ fun TextSpeechInput(
                             contentDescription = "",
                         )
                     }
-                    AnimatedVolumeLevelBar(
-                        modifier = Modifier
-                            .weight(1F)
-                            .defaultMinSize(40.dp)
-                            .padding(end = 12.dp)
-                    )
+                    if (inputState.isMicPermissionGranted) {
+                        AnimatedVolumeLevelBar(
+                            modifier = Modifier
+                                .weight(1F)
+                                .height(40.dp)
+                        )
+                    } else {
+                        Text(
+                            "Speech input require microphone access",
+                            maxLines = 1,
+                            fontSize = 12.sp,
+                            modifier = Modifier.weight(1F)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(20.dp))
                 }
                 TextSpeechInputState.InputMethod.Keyboard -> {
                     BasicTextField(
@@ -280,39 +364,57 @@ fun TextSpeechInput(
                 }
             }
             TextSpeechInputState.InputMethod.Speech -> {
-                if (inputState.isVoiceActivated) {
-                    Box(
-                        Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                if (inputState.isMicPermissionGranted) {
+                    if (inputState.isVoiceActivated) {
+                        Box(
+                            Modifier.size(40.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            FilledIconButton(
+                                onClick = {
+                                    inputState.onStopSpeech()
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Stop,
+                                    contentDescription = "",
+                                )
+                            }
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(40.dp),
+                                color = MaterialTheme.colorScheme.secondary,
+                                strokeWidth = 5.dp
+                            )
+                        }
+                    } else {
                         FilledIconButton(
                             onClick = {
-                                inputState.onStopSpeech()
+                                inputState.onStartSpeech()
                             },
-                            modifier = Modifier.size(32.dp)) {
+                            modifier = Modifier
+                                .align(Alignment.Bottom)
+                                .size(40.dp)
+                        ) {
                             Icon(
-                                Icons.Default.Stop,
+                                Icons.Default.Mic,
                                 contentDescription = "",
                             )
                         }
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp),
-                            color = MaterialTheme.colorScheme.secondary,
-                            strokeWidth = 5.dp
-                        )
                     }
                 } else {
-                    FilledIconButton(
-                        onClick = {
-                            inputState.onStartSpeech()
-                        },
-                        modifier = Modifier
-                            .align(Alignment.Bottom)
-                            .size(40.dp)) {
+                    Button(onClick = {
+                        inputState.onRequestMicPermission()
+                    }, modifier = Modifier
+                        .align(Alignment.Bottom)
+                        .height(40.dp)
+                        .defaultMinSize(minWidth = 40.dp)
+                    ) {
                         Icon(
                             Icons.Default.Mic,
                             contentDescription = "",
                         )
+                        Text(text = "Allow")
                     }
                 }
             }

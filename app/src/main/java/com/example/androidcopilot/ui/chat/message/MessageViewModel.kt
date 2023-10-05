@@ -87,9 +87,6 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
             if (conversationId == 0L) {
                 return@launch
             }
-            if (!sendMessageState.compareAndSet(false, true)) {
-                return@launch
-            }
             chatClient.send(
                 Message(
                     conversation = conversationIdState.value,
