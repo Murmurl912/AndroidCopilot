@@ -15,8 +15,10 @@
 
 
 
+|              chat              |              voice              |           conversation            |
+|:------------------------------:|:-------------------------------:|:---------------------------------:|
 | ![Untitled](art/text-chat.png) | ![Untitled](art/voice-chat.png) | ![Untitled](art/conversation.png) |
-|--------------------------------|---------------------------------|-----------------------------------|
+
 ![Untitled](art/conversation-drawer.png)
 
 ### The Plans
