@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.chat.home
+package com.example.androidcopilot.ui.home
 
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel

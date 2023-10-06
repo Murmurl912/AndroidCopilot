@@ -1,26 +1,33 @@
-package com.example.androidcopilot.ui.chat.conversation
+package com.example.androidcopilot.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Message
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.DismissibleNavigationDrawer
+import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
-import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,25 +38,28 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.androidcopilot.chat.ChatClient
 import com.example.androidcopilot.chat.model.Conversation
+import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.theme.LocalWindowSizeClass
+import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
-fun ConversationListDrawer(
-    conversationViewModel: ConversationListDrawerViewModel,
+fun AppNavigationDrawer(
+    appNavigationDrawerViewModel: AppNavigationDrawerViewModel,
     content: @Composable () -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(drawerState.currentValue) {
-        conversationViewModel.drawerOpenStateFlow.value = drawerState.currentValue == DrawerValue.Open
+        appNavigationDrawerViewModel.drawerOpenStateFlow.value = drawerState.currentValue == DrawerValue.Open
         if (drawerState.currentValue == DrawerValue.Open) {
             keyboardController?.hide()
         }
     }
     LaunchedEffect(Unit) {
-        conversationViewModel.drawerCommands.collect { command ->
+        appNavigationDrawerViewModel.drawerCommands.collect { command ->
             if (command.consumed) {
                 return@collect
             }
@@ -66,14 +76,14 @@ fun ConversationListDrawer(
         WindowWidthSizeClass.Expanded,
         WindowWidthSizeClass.Medium -> {
                 DismissibleNavigationDrawer(drawerContent = {
-                    ConversationListDrawerSheet(conversationViewModel = conversationViewModel)
+                    AppNavigationDrawerSheet(appNavigationDrawerViewModel = appNavigationDrawerViewModel)
                 }, drawerState = drawerState) {
                     content()
                 }
             }
         WindowWidthSizeClass.Compact, null -> {
             ModalNavigationDrawer(drawerContent = {
-                ConversationListDrawerSheet(conversationViewModel = conversationViewModel)
+                AppNavigationDrawerSheet(appNavigationDrawerViewModel = appNavigationDrawerViewModel)
             }, drawerState = drawerState) {
                 content()
             }
@@ -83,18 +93,55 @@ fun ConversationListDrawer(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun ConversationListDrawerSheet(
+internal fun AppNavigationDrawerSheet(
     modifier: Modifier = Modifier,
-    conversationViewModel: ConversationListDrawerViewModel
+    appNavigationDrawerViewModel: AppNavigationDrawerViewModel
 ) {
-    val conversation by conversationViewModel.currentConversation.collectAsState()
-    val conversations by conversationViewModel.conversations.collectAsState()
+    val conversation by appNavigationDrawerViewModel.currentConversation.collectAsState()
+    val conversations by appNavigationDrawerViewModel.conversations.collectAsState()
     ModalDrawerSheet(modifier) {
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(text = "Conversations",
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        NewConversationItem(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            onClick = appNavigationDrawerViewModel::onNewConversation
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         ConversationList(
+            modifier = Modifier
+                .weight(1F)
+                .padding(horizontal = 12.dp),
             conversation = conversation,
             conversations = conversations,
-            onClickConversation = conversationViewModel::onSwitchConversation,
-            onNewConversation = conversationViewModel::onNewConversation
+            onClickConversation = appNavigationDrawerViewModel::onSwitchConversation,
+        )
+        Divider(modifier = Modifier.fillMaxWidth().padding(12.dp)
+            .background(MaterialTheme.colorScheme.onSurface.copy(0.6F)))
+        NavigationDrawerItem(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            label = {
+               Text(text = "Setting")
+            }, selected = false,
+            onClick = appNavigationDrawerViewModel::openSetting,
+            shape = RoundedCornerShape(6.dp),
+            icon = {
+                Icon(Icons.Rounded.Settings, contentDescription = "")
+            }
+        )
+        NavigationDrawerItem(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            label = {
+                Text(text = "About")
+            }, selected = false,
+            onClick = appNavigationDrawerViewModel::openSetting,
+            shape = RoundedCornerShape(6.dp),
+            icon = {
+                Icon(Icons.Rounded.Info, contentDescription = "")
+            }
         )
     }
 }
@@ -105,16 +152,11 @@ internal fun ConversationList(
     conversation: Conversation? = null,
     conversations: List<Conversation> = emptyList(),
     onClickConversation: (Conversation) -> Unit = {},
-    onNewConversation: () -> Unit = {}
 ) {
 
     LazyColumn(modifier,
-        contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            NewConversationItem(onClick = onNewConversation)
-        }
         items(conversations.size) {
             val item = conversations[it]
             ConversationItem(
@@ -192,11 +234,32 @@ fun ConversationItemPreview() {
         ),
     )
 
-    ModalDrawerSheet {
-        ConversationList(
-            conversations = conversations,
-            conversation = conversations[0]
-        )
-    }
+    AppNavigationDrawerSheet(appNavigationDrawerViewModel = AppNavigationDrawerViewModel(
+        object : ChatClient {
+            override suspend fun send(message: Message): Flow<Message> {
+                TODO("Not yet implemented")
+            }
+
+            override fun messages(conversationId: Long): Flow<List<Message>> {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun conversation(): Conversation {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun conversation(id: Long): Flow<Conversation> {
+                TODO("Not yet implemented")
+            }
+
+            override fun conversations(): Flow<List<Conversation>> {
+                TODO("Not yet implemented")
+            }
+
+            override suspend fun delete(conversation: Conversation) {
+                TODO("Not yet implemented")
+            }
+        }
+    ))
 
 }

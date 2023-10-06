@@ -1,9 +1,7 @@
 package com.example.androidcopilot.ui.chat.message
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.DragInteraction
-import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +28,6 @@ import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,7 +39,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.MenuItemColors
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,15 +55,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawerViewModel
+import com.example.androidcopilot.ui.AppNavigationDrawerViewModel
 import com.example.androidcopilot.chat.model.Message
-import com.example.androidcopilot.chat.model.isCompleted
-import com.example.androidcopilot.ui.chat.conversation.ConversationListDrawer
 import com.example.androidcopilot.ui.chat.input.TextSpeechInput
 import com.example.androidcopilot.ui.chat.input.rememberTextSpeechInputState
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterIsInstance
 
@@ -77,7 +67,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MessageScreen(
-    conversationViewModel: ConversationListDrawerViewModel,
+    appNavigationDrawerViewModel: AppNavigationDrawerViewModel,
     messageViewModel: MessageViewModel,
 ) {
     val conversation by messageViewModel.conversation.collectAsState()
@@ -92,73 +82,69 @@ fun MessageScreen(
         mutableStateOf(false)
     }
     val isSendingMessage by messageViewModel.isSendingMessage.collectAsState()
-    ConversationListDrawer(conversationViewModel = conversationViewModel) {
-        Scaffold(
-            topBar = {
-                TopAppBar(title = {
-                    val title = if (conversation.title.isEmpty()) {
-                        "Untitled Conversation"
-                    } else {
-                        conversation.title
-                    }
-                    Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }, navigationIcon = {
-                    IconButton(onClick = conversationViewModel::toggleDrawer
-                    ) {
-                        Icon(Icons.Default.ListAlt, "")
-                    }
-                }, actions = {
-                    IconButton(onClick = {
-                        showMenu = true
-                    }) {
-                        Icon(Icons.Default.MoreVert, "")
-                    }
-                    MessageMenu(expanded = showMenu, onDismissRequest = {
-                        showMenu = false
-                    }, onNewChat = {
-                        showMenu = false
-                        conversationViewModel.onNewConversation()
-                    }, onDelete = {
-                        showMenu = false
-                        showDelete = true
-                    }, onRename = {
-                        showMenu = false
-                    })
-                })
-            }
-        ) {
-            Column(
-                Modifier
-                    .padding(it)
-                    .consumeWindowInsets(it)) {
-                MessageList(modifier = Modifier
-                    .weight(1F)
-                    .fillMaxWidth(),
-                    messages = messages,
-                    messageViewModel.scrollCommand
-                )
-                val textSpeechInputState = rememberTextSpeechInputState(
-                    isSending = isSendingMessage,
-                    onSend = { input ->
-                        messageViewModel.send(input, emptyList())
-                    }
-                )
-                TextSpeechInput(
-                    modifier = Modifier.fillMaxWidth(),
-                    inputState = textSpeechInputState,
-                )
-            }
-            MessageDeleteDialog(show = showDelete, onDismissRequest = {
-                showDelete = false
-            }, onDelete = {
-                isDeletingConversation = true
-                conversationViewModel.onDeleteConversation(conversation, onCompleted = {
-                    success, error ->
+    Scaffold(
+        topBar = {
+            TopAppBar(title = {
+                val title = conversation.title.ifEmpty {
+                    "Untitled Conversation"
+                }
+                Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }, navigationIcon = {
+                IconButton(onClick = appNavigationDrawerViewModel::toggleDrawer
+                ) {
+                    Icon(Icons.Default.ListAlt, "")
+                }
+            }, actions = {
+                IconButton(onClick = {
+                    showMenu = true
+                }) {
+                    Icon(Icons.Default.MoreVert, "")
+                }
+                MessageMenu(expanded = showMenu, onDismissRequest = {
                     showMenu = false
-                    isDeletingConversation = false
+                }, onNewChat = {
+                    showMenu = false
+                    appNavigationDrawerViewModel.onNewConversation()
+                }, onDelete = {
+                    showMenu = false
+                    showDelete = true
+                }, onRename = {
+                    showMenu = false
                 })
             })
         }
+    ) {
+        Column(
+            Modifier
+                .padding(it)
+                .consumeWindowInsets(it)) {
+            MessageList(modifier = Modifier
+                .weight(1F)
+                .fillMaxWidth(),
+                messages = messages,
+                messageViewModel.scrollCommand
+            )
+            val textSpeechInputState = rememberTextSpeechInputState(
+                isSending = isSendingMessage,
+                onSend = { input ->
+                    messageViewModel.send(input, emptyList())
+                }
+            )
+            TextSpeechInput(
+                modifier = Modifier.fillMaxWidth(),
+                inputState = textSpeechInputState,
+            )
+        }
+        MessageDeleteDialog(show = showDelete, onDismissRequest = {
+            showDelete = false
+        }, onDelete = {
+            isDeletingConversation = true
+            appNavigationDrawerViewModel.onDeleteConversation(conversation, onCompleted = {
+                    success, error ->
+                showMenu = false
+                isDeletingConversation = false
+            })
+        })
     }
 }
 

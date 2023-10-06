@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.chat.conversation
+package com.example.androidcopilot.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,19 +7,15 @@ import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ConversationListDrawerViewModel  @Inject constructor (
+class AppNavigationDrawerViewModel  @Inject constructor (
     private val client: ChatClient
 ): ViewModel() {
 
@@ -66,12 +62,14 @@ class ConversationListDrawerViewModel  @Inject constructor (
         Navigator.navigate(
             AppScreens.MessageScreen.createRoute(conversation.id)
         )
+        toggleDrawer()
     }
 
     fun openSetting() {
         Navigator.navigate(
             AppScreens.SettingScreen.name
         )
+        toggleDrawer()
     }
 
 
