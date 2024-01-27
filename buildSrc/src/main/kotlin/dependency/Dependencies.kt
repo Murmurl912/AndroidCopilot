@@ -61,4 +61,13 @@ object Dependencies {
     const val ComposeWindowSizeClass = "androidx.compose.material3:material3-window-size-class"
 
     const val LincollincolAmplituda = "com.github.lincollincol:amplituda:${Versions.LincollincolAmplituda}"
+
+    const val TensorflowLiteTaskAudio = "org.tensorflow:tensorflow-lite-task-audio:${Versions.TensorflowLite}"
+
+    const val TensorflowLiteGpuDelegatePlugin = "org.tensorflow:tensorflow-lite-gpu-delegate-plugin:${Versions.TensorflowLite}"
+
+    const val Jna = "net.java.dev.jna:jna:${Versions.Jna}"
+    const val VoskAndroid = "com.alphacephei:vosk-android:${Versions.VoskAndroid}"
+
+
 }

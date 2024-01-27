@@ -22,4 +22,7 @@ object Versions {
     const val AccompanistPermission = "0.30.1"
     const val Room = "2.5.2"
     const val Hlit = "2.44"
+    const val TensorflowLite = "0.4.4"
+    const val Jna = "5.13.0"
+    const val VoskAndroid = "0.3.47"
 }

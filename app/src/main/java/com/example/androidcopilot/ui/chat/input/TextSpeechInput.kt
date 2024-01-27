@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoMode
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Send
@@ -39,16 +38,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +67,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
+import com.example.androidcopilot.speech.ISpeechRecognizer
+import com.example.androidcopilot.speech.RecognizerState
+import com.example.androidcopilot.speech.android.AndroidSpeechRecognizer
 import lerpF
 import toPxf
 
@@ -98,7 +97,9 @@ class TextSpeechInputState internal constructor(
 
     internal var isMicPermissionGranted by mutableStateOf(false)
     internal var micPermissionLauncher: ActivityResultLauncher<String>? = null
-    internal var requestMicPermissionResultCallback: (Boolean) -> Unit = { isMicPermissionGranted = it }
+    internal var requestMicPermissionResultCallback: (Boolean) -> Unit =
+        { isMicPermissionGranted = it }
+
     @OptIn(ExperimentalComposeUiApi::class)
     internal var localSoftwareKeyboardController: SoftwareKeyboardController? = null
 
@@ -109,7 +110,8 @@ class TextSpeechInputState internal constructor(
         val currentState = LocalLifecycleOwner.current.lifecycle.currentState
         LaunchedEffect(currentState) {
             if (currentState == Lifecycle.State.RESUMED) {
-                isMicPermissionGranted = context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                isMicPermissionGranted =
+                    context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
             }
         }
         micPermissionLauncher = rememberLauncherForActivityResult(
@@ -149,6 +151,7 @@ class TextSpeechInputState internal constructor(
         }
     }
 
+    @SuppressLint("MissingPermission")
     fun onStartSpeech() {
         speechRecognizer.start()
     }
@@ -177,6 +180,7 @@ class TextSpeechInputState internal constructor(
                 InputMethod.Speech -> {
                     InputValue.SpeechInputValue(speechRecognizer.speech.value)
                 }
+
                 InputMethod.Keyboard -> {
                     InputValue.TextInputValue(inputValue.text)
                 }
@@ -201,9 +205,9 @@ class TextSpeechInputState internal constructor(
 
 sealed interface InputValue {
 
-    data class TextInputValue(val text: String): InputValue
+    data class TextInputValue(val text: String) : InputValue
 
-    data class SpeechInputValue(val text: String, val audioFile: String = ""): InputValue
+    data class SpeechInputValue(val text: String, val audioFile: String = "") : InputValue
 
 }
 
@@ -212,6 +216,7 @@ fun InputValue.asText(): String {
         is InputValue.TextInputValue -> {
             text
         }
+
         is InputValue.SpeechInputValue -> {
             text
         }
@@ -220,7 +225,7 @@ fun InputValue.asText(): String {
 
 @Composable
 fun rememberTextSpeechInputState(
-    onSend: (InputValue) -> Boolean = {false},
+    onSend: (InputValue) -> Boolean = { false },
     onStop: () -> Unit = {},
     isSending: Boolean = false,
     textInput: TextFieldValue = TextFieldValue()
@@ -242,14 +247,19 @@ fun rememberTextSpeechInputState(
     LaunchedEffect(textInput) {
         state.inputValue = textInput
     }
-    val speechState by speechRecognizer.state
+    val speechState by speechRecognizer.state.collectAsState()
     LaunchedEffect(speechState) {
         when (speechState) {
             RecognizerState.Started -> {
                 state.onSpeechStarted()
             }
+
             RecognizerState.Stopped -> {
                 state.onSpeechEnded()
+            }
+
+            else -> {
+
             }
         }
     }
@@ -271,7 +281,8 @@ fun TextSpeechInput(
     Row(
         Modifier
             .padding(vertical = 12.dp)
-            .windowInsetsPadding(WindowInsets.ime)) {
+            .windowInsetsPadding(WindowInsets.ime)
+    ) {
         Spacer(Modifier.width(12.dp))
 
         Row(
@@ -292,7 +303,8 @@ fun TextSpeechInput(
                         onCheckedChange = {
                             inputState.onChangeInputMethod(TextSpeechInputState.InputMethod.Keyboard)
                         },
-                        modifier = Modifier.size(40.dp)) {
+                        modifier = Modifier.size(40.dp)
+                    ) {
                         Icon(
                             Icons.Default.Keyboard,
                             contentDescription = "",
@@ -314,6 +326,7 @@ fun TextSpeechInput(
                     }
                     Spacer(modifier = Modifier.width(20.dp))
                 }
+
                 TextSpeechInputState.InputMethod.Keyboard -> {
                     BasicTextField(
                         value = inputState.inputValue,
@@ -321,10 +334,8 @@ fun TextSpeechInput(
                         modifier = Modifier
                             .weight(1F)
                             .defaultMinSize(40.dp)
-                            .padding(vertical = 6.dp, horizontal = 12.dp)
-                        ,
-                        textStyle = TextStyle.Default.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        ,
+                            .padding(vertical = 6.dp, horizontal = 12.dp),
+                        textStyle = TextStyle.Default.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                         maxLines = 3,
                     ) {
                         if (inputState.inputValue.text.isEmpty()) {
@@ -345,7 +356,8 @@ fun TextSpeechInput(
                     ) {
                         FilledIconButton(
                             onClick = inputState::onStopSend,
-                            modifier = Modifier.size(32.dp)) {
+                            modifier = Modifier.size(32.dp)
+                        ) {
                             Icon(
                                 Icons.Default.Stop,
                                 contentDescription = "",
@@ -358,22 +370,26 @@ fun TextSpeechInput(
                         )
                     }
                 } else if (inputState.inputValue.text.isNotEmpty()) {
-                    FilledIconButton(onClick = inputState::onStartSend,
+                    FilledIconButton(
+                        onClick = inputState::onStartSend,
                         modifier = Modifier
                             .align(Alignment.Bottom)
-                            .size(40.dp)) {
+                            .size(40.dp)
+                    ) {
                         Icon(
                             Icons.Default.Send,
                             contentDescription = "",
                         )
                     }
                 } else {
-                    FilledIconButton(onClick = {
+                    FilledIconButton(
+                        onClick = {
                             inputState.onChangeInputMethod(TextSpeechInputState.InputMethod.Speech)
                         },
                         modifier = Modifier
                             .align(Alignment.Bottom)
-                            .size(40.dp)) {
+                            .size(40.dp)
+                    ) {
                         Icon(
                             Icons.Default.Mic,
                             contentDescription = "",
@@ -381,6 +397,7 @@ fun TextSpeechInput(
                     }
                 }
             }
+
             TextSpeechInputState.InputMethod.Speech -> {
                 if (inputState.isMicPermissionGranted) {
                     if (inputState.isVoiceActivated) {
@@ -421,12 +438,13 @@ fun TextSpeechInput(
                         }
                     }
                 } else {
-                    Button(onClick = {
-                        inputState.onRequestMicPermission()
-                    }, modifier = Modifier
-                        .align(Alignment.Bottom)
-                        .height(40.dp)
-                        .defaultMinSize(minWidth = 40.dp)
+                    Button(
+                        onClick = {
+                            inputState.onRequestMicPermission()
+                        }, modifier = Modifier
+                            .align(Alignment.Bottom)
+                            .height(40.dp)
+                            .defaultMinSize(minWidth = 40.dp)
                     ) {
                         Icon(
                             Icons.Default.Mic,

@@ -18,3 +18,4 @@ config.properties
 # Project exclude paths
 /buildSrc/build/
 /buildSrc/build/classes/kotlin/main/
+/.idea/

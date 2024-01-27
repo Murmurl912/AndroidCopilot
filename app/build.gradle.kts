@@ -60,6 +60,9 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    androidResources {
+        noCompress.add("tflite")
+    }
 }
 kotlin {
     jvmToolchain(ProjectConfig.KOTLIN_JVM_TOOLCHAIN)
@@ -107,6 +110,12 @@ dependencies {
     implementation(Dependencies.ComposeWindowSizeClass)
 
     implementation(Dependencies.LincollincolAmplituda)
+
+    implementation(Dependencies.TensorflowLiteTaskAudio)
+    implementation(Dependencies.TensorflowLiteGpuDelegatePlugin)
+
+    implementation(Dependencies.Jna)
+    implementation(Dependencies.VoskAndroid)
 
     testImplementation(Dependencies.Junit)
     androidTestImplementation(Dependencies.AndroidxTestExtJunit)

@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.chat.input
+package com.example.androidcopilot.speech.android
 
 import android.content.Context
 import android.content.Intent
@@ -9,41 +9,23 @@ import android.speech.SpeechRecognizer
 import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-
-
-interface ISpeechRecognizer {
-
-    val speech: State<String>
-    val state: State<RecognizerState>
-    val rms: State<Float>
-
-    fun start()
-
-    fun stop()
-
-
-}
-
-sealed interface RecognizerState {
-
-    object Started: RecognizerState
-
-    object Stopped: RecognizerState
-
-}
+import com.example.androidcopilot.speech.ISpeechRecognizer
+import com.example.androidcopilot.speech.RecognizerState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class AndroidSpeechRecognizer(
     private val context: Context
 ): ISpeechRecognizer {
 
-    private val speechResult = mutableStateOf("")
-    private val recognizerState = mutableStateOf<RecognizerState>(
+    private val speechResult = MutableStateFlow("")
+    private val recognizerState = MutableStateFlow<RecognizerState>(
         RecognizerState.Stopped
     )
-    private val voiceRms = mutableStateOf(0F)
-    override val speech: State<String> = speechResult
-    override val state: State<RecognizerState> = recognizerState
-    override val rms: State<Float> = voiceRms
+    private val voiceRms = MutableStateFlow(0F)
+    override val speech: StateFlow<String> = speechResult
+    override val state: StateFlow<RecognizerState> = recognizerState
+    override val rms: StateFlow<Float> = voiceRms
 
     private var speechRecognizer: SpeechRecognizer? = null
         get() {
