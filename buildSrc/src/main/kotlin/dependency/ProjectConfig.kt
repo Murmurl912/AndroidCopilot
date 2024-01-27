@@ -6,7 +6,7 @@ object ProjectConfig {
 
     const val APPLICATION_ID = "com.example.androidcopilot"
 
-    const val ANDROID_MIN_SDK  = 24
+    const val ANDROID_MIN_SDK  = 26
     const val COMPILE_SDK = 33
     const val TARGET_SDK = 33
 
