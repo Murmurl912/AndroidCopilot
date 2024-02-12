@@ -1,4 +1,4 @@
-package com.example.androidcopilot.chat
+package com.example.androidcopilot.app
 
 interface AppLogger {
 

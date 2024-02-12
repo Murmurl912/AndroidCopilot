@@ -1,15 +1,12 @@
 package com.example.androidcopilot.ui.chat.message
 
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.androidcopilot.chat.ChatClient
+import com.example.androidcopilot.api.chat.ChatClient
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.chat.input.InputValue
-import com.example.androidcopilot.ui.chat.input.TextSpeechInputState
 import com.example.androidcopilot.ui.chat.input.asText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,8 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.io.encoding.Base64

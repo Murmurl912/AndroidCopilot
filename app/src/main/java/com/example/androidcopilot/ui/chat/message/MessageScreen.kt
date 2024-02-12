@@ -450,7 +450,7 @@ fun MessagesPreview() {
                 functionArgs = "AI wants your location"
             ),
             Message(
-                id = 4,
+                id = 5,
                 conversation = 0,
                 type = Message.MessageType.TypeFunctionCallResponse,
                 status = Message.MessageStatus.StatusSuccess,

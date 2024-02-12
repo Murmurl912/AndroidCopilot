@@ -1,14 +1,12 @@
 package com.example.androidcopilot.ui.home
 
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.androidcopilot.chat.ChatClient
+import com.example.androidcopilot.api.chat.ChatClient
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator
 import com.example.androidcopilot.ui.chat.input.InputValue
-import com.example.androidcopilot.ui.chat.input.TextSpeechInputState
 import com.example.androidcopilot.ui.chat.input.asText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay

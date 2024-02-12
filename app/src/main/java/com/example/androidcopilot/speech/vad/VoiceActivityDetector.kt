@@ -1,16 +1,17 @@
 package com.example.androidcopilot.speech.vad
 
 import android.content.Context
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.tensorflow.lite.support.audio.TensorAudio
 import org.tensorflow.lite.task.audio.classifier.AudioClassifier
+import java.util.concurrent.atomic.AtomicInteger
 
 interface VoiceActivityDetector {
 
-    val sampleRate: Int
+    fun init(sampleRate: Int, sampleCount: Int, channels: Int)
 
-    val frameSize: Int
-
-    fun predict(data: FloatArray): VoiceActivityCategory
+    fun predict(audioFlow: Flow<ShortArray>): Flow<VoiceActivityCategory>
 
     fun close()
 
@@ -18,7 +19,7 @@ interface VoiceActivityDetector {
 
 data class VoiceActivityCategory(
     val label: String,
-    val probability: Float
+    val probability: Float,
 )
 
 fun VoiceActivityCategory.isSpeech(): Boolean {
@@ -34,16 +35,14 @@ fun VoiceActivityCategory.isNoise(): Boolean {
 }
 
 class YanmetVoiceActivityDetector(
-    context: Context,
+    private val context: Context,
     private val modelPath: String,
-    override val sampleRate: Int = 16000, // 16000 Hz fixed cannot change
-    override val frameSize: Int = 15600 // 0.975 sec fixed cannot change
 ) : VoiceActivityDetector {
 
-    private val tensor: TensorAudio
-    private val classifier: AudioClassifier
+    private lateinit var tensor: TensorAudio
+    private lateinit var classifier: AudioClassifier
 
-    init {
+    override fun init(sampleRate: Int, sampleCount: Int, channels: Int) {
         this.classifier = AudioClassifier.createFromFileAndOptions(
             context, modelPath,
             AudioClassifier.AudioClassifierOptions.builder()
@@ -53,17 +52,23 @@ class YanmetVoiceActivityDetector(
         this.tensor = TensorAudio.create(
             TensorAudio.TensorAudioFormat.builder()
                 .setSampleRate(sampleRate)
+                .setChannels(channels)
                 .build(),
-            frameSize
+            sampleCount
         )
     }
 
-    override fun predict(data: FloatArray): VoiceActivityCategory {
-        tensor.load(data)
-        val result = classifier.classify(tensor)
-        return result.map {
-            VoiceActivityCategory(it.categories[0].label, it.categories[0].score)
-        }.first()
+    override fun predict(audioFlow: Flow<ShortArray>): Flow<VoiceActivityCategory> {
+        return audioFlow.map { array ->
+            tensor.load(array)
+            val category = classifier.classify(tensor)
+                .firstOrNull()
+            VoiceActivityCategory(
+                label = category?.categories?.firstOrNull()?.label ?: "Noise",
+                probability = category?.categories?.firstOrNull()?.score ?: 0f,
+            )
+        }
+
     }
 
     override fun close() {

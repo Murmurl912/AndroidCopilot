@@ -2,7 +2,7 @@ package com.example.androidcopilot.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.androidcopilot.chat.ChatClient
+import com.example.androidcopilot.api.chat.ChatClient
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.navigation.AppScreens
 import com.example.androidcopilot.navigation.Navigator

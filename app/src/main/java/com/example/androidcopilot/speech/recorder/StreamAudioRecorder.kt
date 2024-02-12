@@ -5,8 +5,8 @@ import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flowOn
+import java.nio.ByteBuffer
 
 
 class StreamAudioRecorder {
@@ -17,54 +17,65 @@ class StreamAudioRecorder {
         get() = audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING
 
     @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
-    fun <T> start(
+    fun start(
         audioSource: Int = MediaRecorder.AudioSource.MIC,
         sampleRate: Int = 44100,
         channelConfig: Int = AudioFormat.CHANNEL_IN_MONO,
-        audioFormat: Int = AudioFormat.ENCODING_PCM_16BIT
+        audioFormat: Int = AudioFormat.ENCODING_PCM_16BIT,
+        bufferSize: Int = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
     ): Flow<ByteArray> {
-        if (audioRecord?.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+        if (isRecording) {
             throw IllegalStateException("Already recording");
         }
-        return record(audioSource, sampleRate, channelConfig, audioFormat)
+
+        val audioRecord =
+            createRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize)
+        this.audioRecord = audioRecord
+        return record(audioRecord, bufferSize)
     }
 
     @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
-    private fun record(
+    private fun createRecord(
         audioSource: Int,
         sampleRate: Int,
         channelConfig: Int,
-        audioFormat: Int
-    ): Flow<ByteArray> {
-        val minBufSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
-        val audioRecord = AudioRecord(
+        audioFormat: Int,
+        bufferSize: Int
+    ): AudioRecord {
+        return AudioRecord(
             audioSource,
             sampleRate,
             channelConfig,
             audioFormat,
-            minBufSize
+            bufferSize
         )
-        this.audioRecord = audioRecord;
+    }
+
+    @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
+    private fun record(
+        audioRecord: AudioRecord,
+        bufferSize: Int
+    ): Flow<ByteArray> {
         return flow {
-            withContext(Dispatchers.IO) {
-                try {
-                    val buffer = ByteArray(minBufSize)
-                    audioRecord.startRecording()
-                    while (audioRecord.recordingState == AudioRecord.RECORDSTATE_RECORDING && isActive) {
-                        val read = audioRecord.read(buffer, 0, buffer.size)
-                        if (read > 0) {
-                            emit(buffer.copyOf(read))
-                        } else if (read < 0) {
-                            break;
-                        }
+            val buffer = ByteBuffer.allocateDirect(bufferSize)
+            try {
+                audioRecord.startRecording()
+                while (audioRecord.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    val read = audioRecord.read(buffer, buffer.capacity())
+                    if (read > 0) {
+                        buffer.flip()
+                        val data = ByteArray(buffer.remaining())
+                        buffer.get(data)
+                        emit(data)
+                    } else if (read < 0) {
+                        break;
                     }
-                } finally {
-                    audioRecord.stop()
-                    audioRecord.release()
-                    this@StreamAudioRecorder.audioRecord = null;
                 }
+            } finally {
+                audioRecord.stop()
+                audioRecord.release()
             }
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
     fun stop() {

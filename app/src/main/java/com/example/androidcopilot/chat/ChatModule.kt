@@ -3,9 +3,11 @@ package com.example.androidcopilot.chat
 import com.aallam.openai.client.OpenAI
 import com.aallam.openai.client.OpenAIHost
 import com.example.androidcopilot.BuildConfig
+import com.example.androidcopilot.api.chat.ChatClient
 import com.example.androidcopilot.app.ApplicationDependencies
 import com.example.androidcopilot.chat.database.ChatDatabase
 import com.example.androidcopilot.chat.openai.OpenaiChatClient
+import com.example.androidcopilot.app.LogcatLogger
 import com.example.androidcopilot.chat.repository.ChatRepository
 import com.example.androidcopilot.chat.repository.local.LocalChatRepository
 import dagger.Module

@@ -7,10 +7,10 @@ import com.aallam.openai.api.chat.FunctionCall
 import com.aallam.openai.api.core.FinishReason
 import com.aallam.openai.api.model.ModelId
 import com.aallam.openai.client.OpenAI
-import com.example.androidcopilot.chat.AppLogger
+import com.example.androidcopilot.app.AppLogger
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
-import com.example.androidcopilot.chat.ChatClient
+import com.example.androidcopilot.api.chat.ChatClient
 import com.example.androidcopilot.chat.model.isCompleted
 import com.example.androidcopilot.chat.repository.ChatRepository
 import kotlinx.coroutines.CancellationException

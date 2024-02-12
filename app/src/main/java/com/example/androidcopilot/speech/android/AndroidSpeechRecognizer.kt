@@ -25,7 +25,6 @@ class AndroidSpeechRecognizer(
     private val voiceRms = MutableStateFlow(0F)
     override val speech: StateFlow<String> = speechResult
     override val state: StateFlow<RecognizerState> = recognizerState
-    override val rms: StateFlow<Float> = voiceRms
 
     private var speechRecognizer: SpeechRecognizer? = null
         get() {

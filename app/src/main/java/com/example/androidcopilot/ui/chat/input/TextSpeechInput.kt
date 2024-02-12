@@ -61,7 +61,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -69,11 +68,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import com.example.androidcopilot.speech.ISpeechRecognizer
+import com.example.androidcopilot.speech.OpenaiSpeechRecognizer
 import com.example.androidcopilot.speech.RecognizerState
-import com.example.androidcopilot.speech.android.AndroidSpeechRecognizer
 import lerpF
 import toPxf
-
 import kotlin.random.Random
 
 
@@ -154,7 +152,10 @@ class TextSpeechInputState internal constructor(
 
     @SuppressLint("MissingPermission")
     fun onStartSpeech() {
-        speechRecognizer.start()
+        if (isMicPermissionGranted) {
+            speechRecognizer.start()
+            return
+        }
     }
 
     fun onSpeechStarted() {
@@ -232,9 +233,11 @@ fun rememberTextSpeechInputState(
     textInput: TextFieldValue = TextFieldValue()
 ): TextSpeechInputState {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val speechRecognizer = remember {
-        AndroidSpeechRecognizer(
+        OpenaiSpeechRecognizer(
             context,
+            coroutineScope,
         )
     }
     val state = remember {
@@ -276,193 +279,228 @@ fun rememberTextSpeechInputState(
 @Composable
 fun TextSpeechInput(
     modifier: Modifier = Modifier,
+    inputState: TextSpeechInputState = rememberTextSpeechInputState(),
+) {
+    when (inputState.inputMethod) {
+        TextSpeechInputState.InputMethod.Speech -> {
+            SpeechInput(
+                modifier = Modifier
+                    .padding(vertical = 12.dp),
+                inputState = inputState
+            )
+        }
+
+        TextSpeechInputState.InputMethod.Keyboard -> {
+            TextInput(
+                Modifier
+                    .padding(vertical = 12.dp)
+                    .windowInsetsPadding(WindowInsets.ime),
+                inputState = inputState
+            )
+        }
+    }
+
+}
+
+@Composable
+fun TextInput(
+    modifier: Modifier = Modifier,
     textInputLabel: @Composable () -> Unit = {
         Text("Ask me anything?", color = LocalContentColor.current.copy(0.3F))
     },
-    inputState: TextSpeechInputState = rememberTextSpeechInputState(),
+    inputState: TextSpeechInputState
 ) {
     Row(
-        Modifier
-            .padding(vertical = 12.dp)
-            .windowInsetsPadding(WindowInsets.ime)
+        modifier
     ) {
+        Spacer(Modifier.width(16.dp))
+        Row(
+            Modifier
+                .weight(1F)
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    RoundedCornerShape(24.dp)
+                )
+                .defaultMinSize(minHeight = 48.dp)
+                .align(Alignment.CenterVertically),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BasicTextField(
+                value = inputState.inputValue,
+                onValueChange = inputState::onInputTextChange,
+                modifier = Modifier
+                    .weight(1F)
+                    .defaultMinSize(48.dp)
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                maxLines = 3,
+            ) {
+                if (inputState.inputValue.text.isEmpty()) {
+                    textInputLabel()
+                }
+                it()
+            }
+        }
         Spacer(Modifier.width(12.dp))
+        if (inputState.isSendingMessage) {
+            Box(
+                Modifier.size(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                FilledIconButton(
+                    onClick = inputState::onStopSend,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Stop,
+                        contentDescription = "",
+                    )
+                }
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 4.dp
+                )
+            }
+        } else if (inputState.inputValue.text.isNotEmpty()) {
+            FilledIconButton(
+                onClick = inputState::onStartSend,
+                modifier = Modifier
+                    .align(Alignment.Bottom)
+                    .size(48.dp)
+            ) {
+                Icon(
+                    Icons.Default.Send,
+                    contentDescription = "",
+                )
+            }
+        } else {
+            FilledIconButton(
+                onClick = {
+                    inputState.onChangeInputMethod(TextSpeechInputState.InputMethod.Speech)
+                },
+                modifier = Modifier
+                    .align(Alignment.Bottom)
+                    .size(48.dp)
+            ) {
+                Icon(
+                    Icons.Default.Mic,
+                    contentDescription = "",
+                )
+            }
+        }
+        Spacer(Modifier.width(16.dp))
+    }
+}
+
+@Composable
+fun SpeechInput(
+    modifier: Modifier = Modifier,
+    inputState: TextSpeechInputState
+) {
+    Row(
+        modifier
+    ) {
+        Spacer(Modifier.width(16.dp))
 
         Row(
             Modifier
                 .weight(1F)
                 .background(
                     MaterialTheme.colorScheme.surfaceVariant,
-                    RoundedCornerShape(20.dp)
+                    RoundedCornerShape(24.dp)
                 )
-                .defaultMinSize(minHeight = 40.dp)
+                .defaultMinSize(minHeight = 48.dp)
                 .align(Alignment.CenterVertically),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            when (inputState.inputMethod) {
-                TextSpeechInputState.InputMethod.Speech -> {
-                    FilledIconToggleButton(
-                        checked = false,
-                        onCheckedChange = {
-                            inputState.onChangeInputMethod(TextSpeechInputState.InputMethod.Keyboard)
-                        },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Keyboard,
-                            contentDescription = "",
-                        )
-                    }
-                    if (inputState.isMicPermissionGranted) {
-                        AnimatedVolumeLevelBar(
-                            modifier = Modifier
-                                .weight(1F)
-                                .height(40.dp)
-                        )
-                    } else {
-                        Text(
-                            "Speech input require microphone access",
-                            maxLines = 1,
-                            fontSize = 12.sp,
-                            modifier = Modifier.weight(1F)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(20.dp))
-                }
-
-                TextSpeechInputState.InputMethod.Keyboard -> {
-                    BasicTextField(
-                        value = inputState.inputValue,
-                        onValueChange = inputState::onInputTextChange,
-                        modifier = Modifier
-                            .weight(1F)
-                            .defaultMinSize(40.dp)
-                            .padding(vertical = 6.dp, horizontal = 12.dp),
-                        textStyle = TextStyle.Default.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                        maxLines = 3,
-                    ) {
-                        if (inputState.inputValue.text.isEmpty()) {
-                            textInputLabel()
-                        }
-                        it()
-                    }
-                }
+            FilledIconToggleButton(
+                checked = false,
+                onCheckedChange = {
+                    inputState.onChangeInputMethod(TextSpeechInputState.InputMethod.Keyboard)
+                },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    Icons.Default.Keyboard,
+                    contentDescription = "",
+                )
             }
+            if (inputState.isMicPermissionGranted) {
+                AnimatedVolumeLevelBar(
+                    modifier = Modifier
+                        .weight(1F)
+                        .height(48.dp)
+                )
+            } else {
+                Text(
+                    "Speech input require microphone access",
+                    maxLines = 1,
+                    fontSize = 12.sp,
+                    modifier = Modifier.weight(1F)
+                )
+            }
+            Spacer(modifier = Modifier.width(20.dp))
+
         }
         Spacer(Modifier.width(12.dp))
-        when (inputState.inputMethod) {
-            TextSpeechInputState.InputMethod.Keyboard -> {
-                if (inputState.isSendingMessage) {
-                    Box(
-                        Modifier.size(40.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        FilledIconButton(
-                            onClick = inputState::onStopSend,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Stop,
-                                contentDescription = "",
-                            )
-                        }
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp),
-                            color = MaterialTheme.colorScheme.secondary,
-                            strokeWidth = 5.dp
-                        )
-                    }
-                } else if (inputState.inputValue.text.isNotEmpty()) {
-                    FilledIconButton(
-                        onClick = inputState::onStartSend,
-                        modifier = Modifier
-                            .align(Alignment.Bottom)
-                            .size(40.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Send,
-                            contentDescription = "",
-                        )
-                    }
-                } else {
+        if (inputState.isMicPermissionGranted) {
+            if (inputState.isVoiceActivated) {
+                Box(
+                    Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     FilledIconButton(
                         onClick = {
-                            inputState.onChangeInputMethod(TextSpeechInputState.InputMethod.Speech)
+                            inputState.onStopSpeech()
                         },
-                        modifier = Modifier
-                            .align(Alignment.Bottom)
-                            .size(40.dp)
+                        modifier = Modifier.size(44.dp)
                     ) {
                         Icon(
-                            Icons.Default.Mic,
+                            Icons.Default.Stop,
                             contentDescription = "",
                         )
                     }
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp
+                    )
+                }
+            } else {
+                FilledIconButton(
+                    onClick = {
+                        inputState.onStartSpeech()
+                    },
+                    modifier = Modifier
+                        .align(Alignment.Bottom)
+                        .size(48.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Mic,
+                        contentDescription = "",
+                    )
                 }
             }
-
-            TextSpeechInputState.InputMethod.Speech -> {
-                if (inputState.isMicPermissionGranted) {
-                    if (inputState.isVoiceActivated) {
-                        Box(
-                            Modifier.size(40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            FilledIconButton(
-                                onClick = {
-                                    inputState.onStopSpeech()
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Stop,
-                                    contentDescription = "",
-                                )
-                            }
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(40.dp),
-                                color = MaterialTheme.colorScheme.secondary,
-                                strokeWidth = 5.dp
-                            )
-                        }
-                    } else {
-                        FilledIconButton(
-                            onClick = {
-                                inputState.onStartSpeech()
-                            },
-                            modifier = Modifier
-                                .align(Alignment.Bottom)
-                                .size(40.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Mic,
-                                contentDescription = "",
-                            )
-                        }
-                    }
-                } else {
-                    Button(
-                        onClick = {
-                            inputState.onRequestMicPermission()
-                        }, modifier = Modifier
-                            .align(Alignment.Bottom)
-                            .height(40.dp)
-                            .defaultMinSize(minWidth = 40.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Mic,
-                            contentDescription = "",
-                        )
-                        Text(text = "Allow")
-                    }
-                }
+        } else {
+            Button(
+                onClick = {
+                    inputState.onRequestMicPermission()
+                }, modifier = Modifier
+                    .align(Alignment.Bottom)
+                    .height(48.dp)
+                    .defaultMinSize(minWidth = 48.dp)
+            ) {
+                Icon(
+                    Icons.Default.Mic,
+                    contentDescription = "",
+                )
+                Text(text = "Allow")
             }
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(16.dp))
     }
-
 }
-
 
 @Composable
 fun AudioVisualizer(
