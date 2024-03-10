@@ -149,4 +149,5 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
     override fun messagePagingSource(conversation: Conversation): PagingSource<Int, Message> {
         return roomChatDao.conversationMessagePagingSource(conversation.id)
     }
+
 }

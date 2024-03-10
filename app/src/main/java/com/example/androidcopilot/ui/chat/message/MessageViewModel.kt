@@ -84,16 +84,6 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
         }
 
     }
-    fun conversation(conversation: Long) {
-        conversationIdState.value = conversation
-    }
-
-    @OptIn(ExperimentalEncodingApi::class)
-    fun sendWithAttachmentId(message: String, attachments: List<Long>) {
-        val messageDecoded = Base64.decode(message)
-            .decodeToString()
-        send(InputValue.TextInputValue(messageDecoded), emptyList())
-    }
 
     fun send(input: InputValue, attachments: List<Attachment>): Boolean {
         if (!sendMessageState.compareAndSet(false, true)) {
@@ -133,6 +123,7 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
         return true
     }
 
+
     fun stop() {
 
     }
@@ -141,6 +132,14 @@ class MessageViewModel  @Inject constructor (private val chatClient: ChatClient)
 
     }
 
+
+    fun onNewConversation() {
+
+    }
+
+    fun onDeleteConversation(conversation: Conversation) {
+
+    }
 
     sealed interface ScrollCommand {
 

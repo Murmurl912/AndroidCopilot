@@ -55,10 +55,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import com.example.androidcopilot.ui.AppNavigationDrawerViewModel
 import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.chat.input.TextSpeechInput
 import com.example.androidcopilot.ui.chat.input.rememberTextSpeechInputState
+import com.example.androidcopilot.ui.main.AppMainViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterIsInstance
@@ -67,18 +67,16 @@ import kotlinx.coroutines.flow.filterIsInstance
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MessageScreen(
-    appNavigationDrawerViewModel: AppNavigationDrawerViewModel,
+    mainViewModel: AppMainViewModel,
     messageViewModel: MessageViewModel,
 ) {
+
     val conversation by messageViewModel.conversation.collectAsState()
     val messages by messageViewModel.messages.collectAsState()
     var showMenu by remember {
         mutableStateOf(false)
     }
     var showDelete by remember {
-        mutableStateOf(false)
-    }
-    var isDeletingConversation by remember {
         mutableStateOf(false)
     }
     val isSendingMessage by messageViewModel.isSendingMessage.collectAsState()
@@ -90,7 +88,9 @@ fun MessageScreen(
                 }
                 Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }, navigationIcon = {
-                IconButton(onClick = appNavigationDrawerViewModel::toggleDrawer
+                IconButton(onClick = {
+                    mainViewModel.onOpenDrawer()
+                }
                 ) {
                     Icon(Icons.Default.ListAlt, "")
                 }
@@ -104,7 +104,7 @@ fun MessageScreen(
                     showMenu = false
                 }, onNewChat = {
                     showMenu = false
-                    appNavigationDrawerViewModel.onNewConversation()
+                    messageViewModel.onNewConversation()
                 }, onDelete = {
                     showMenu = false
                     showDelete = true
@@ -138,12 +138,8 @@ fun MessageScreen(
         MessageDeleteDialog(show = showDelete, onDismissRequest = {
             showDelete = false
         }, onDelete = {
-            isDeletingConversation = true
-            appNavigationDrawerViewModel.onDeleteConversation(conversation, onCompleted = {
-                    success, error ->
-                showMenu = false
-                isDeletingConversation = false
-            })
+            messageViewModel.onDeleteConversation(conversation)
+            showDelete = false
         })
     }
 }

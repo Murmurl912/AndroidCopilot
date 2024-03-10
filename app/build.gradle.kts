@@ -114,9 +114,6 @@ dependencies {
     implementation(Dependencies.TensorflowLiteTaskAudio)
     implementation(Dependencies.TensorflowLiteGpuDelegatePlugin)
 
-    implementation(Dependencies.Jna)
-    implementation(Dependencies.VoskAndroid)
-
     testImplementation(Dependencies.Junit)
     androidTestImplementation(Dependencies.AndroidxTestExtJunit)
     androidTestImplementation(Dependencies.AndroidTestEspressoCore)

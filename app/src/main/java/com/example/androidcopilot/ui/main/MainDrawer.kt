@@ -1,14 +1,11 @@
-package com.example.androidcopilot.ui
+package com.example.androidcopilot.ui.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,101 +29,106 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.androidcopilot.chat.ChatClient
 import com.example.androidcopilot.chat.model.Conversation
-import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.ui.theme.LocalWindowSizeClass
-import kotlinx.coroutines.flow.Flow
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
-@Composable
-fun AppNavigationDrawer(
-    appNavigationDrawerViewModel: AppNavigationDrawerViewModel,
-    content: @Composable () -> Unit
-) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val keyboardController = LocalSoftwareKeyboardController.current
-    LaunchedEffect(drawerState.currentValue) {
-        appNavigationDrawerViewModel.drawerOpenStateFlow.value = drawerState.currentValue == DrawerValue.Open
-        if (drawerState.currentValue == DrawerValue.Open) {
-            keyboardController?.hide()
-        }
-    }
-    LaunchedEffect(Unit) {
-        appNavigationDrawerViewModel.drawerCommands.collect { command ->
-            if (command.consumed) {
-                return@collect
-            }
-            if (command.open && drawerState.targetValue != DrawerValue.Open) {
-                drawerState.open()
-            } else if (drawerState.targetValue != DrawerValue.Closed){
-                drawerState.close()
-            }
-            command.consume()
-        }
-    }
-    val windowSizeClass = LocalWindowSizeClass.current
-    when (windowSizeClass?.widthSizeClass) {
-        WindowWidthSizeClass.Expanded,
-        WindowWidthSizeClass.Medium -> {
-                DismissibleNavigationDrawer(drawerContent = {
-                    AppNavigationDrawerSheet(appNavigationDrawerViewModel = appNavigationDrawerViewModel)
-                }, drawerState = drawerState) {
-                    content()
-                }
-            }
-        WindowWidthSizeClass.Compact, null -> {
-            ModalNavigationDrawer(drawerContent = {
-                AppNavigationDrawerSheet(appNavigationDrawerViewModel = appNavigationDrawerViewModel)
-            }, drawerState = drawerState) {
-                content()
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun AppNavigationDrawerSheet(
-    modifier: Modifier = Modifier,
-    appNavigationDrawerViewModel: AppNavigationDrawerViewModel
+internal fun MainDrawer(
+    viewModel: AppMainViewModel,
+    body: @Composable () -> Unit
 ) {
-    val conversation by appNavigationDrawerViewModel.currentConversation.collectAsState()
-    val conversations by appNavigationDrawerViewModel.conversations.collectAsState()
-    ModalDrawerSheet(modifier) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val windowSizeClass = LocalWindowSizeClass.current
+    val conversationsState by viewModel.conversationState.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.drawerCommand.collect {
+            when (it) {
+                is DrawerCommand.Close -> {
+                    drawerState.close()
+                }
+
+                is DrawerCommand.Open -> {
+                    drawerState.open()
+                }
+            }
+        }
+    }
+
+    when (windowSizeClass?.widthSizeClass) {
+        WindowWidthSizeClass.Expanded,
+        WindowWidthSizeClass.Medium -> {
+            DismissibleNavigationDrawer(drawerContent = {
+                DrawerContent(
+                    viewModel = viewModel,
+                    conversations = conversationsState.conversations,
+                    currentConversation = conversationsState.conversation
+                )
+            }, drawerState = drawerState) {
+                body()
+            }
+        }
+
+        WindowWidthSizeClass.Compact, null -> {
+            ModalNavigationDrawer(drawerContent = {
+                DrawerContent(
+                    viewModel = viewModel,
+                    conversations = conversationsState.conversations,
+                    currentConversation = conversationsState.conversation
+                )
+            }, drawerState = drawerState) {
+                body()
+            }
+        }
+    }
+
+}
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DrawerContent(
+    viewModel: AppMainViewModel,
+    conversations: List<Conversation>,
+    currentConversation: Conversation?
+) {
+    ModalDrawerSheet {
         Spacer(modifier = Modifier.height(12.dp))
-        Text(text = "Conversations",
+        Text(
+            text = "Conversations",
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 12.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
         NewConversationItem(
             modifier = Modifier.padding(horizontal = 12.dp),
-            onClick = appNavigationDrawerViewModel::onNewConversation
+            onClick = viewModel::onNewConversation
         )
         Spacer(modifier = Modifier.height(12.dp))
         ConversationList(
             modifier = Modifier
                 .weight(1F)
                 .padding(horizontal = 12.dp),
-            conversation = conversation,
+            currentConversation = currentConversation,
             conversations = conversations,
-            onClickConversation = appNavigationDrawerViewModel::onSwitchConversation,
+            onClickConversation = viewModel::onSwitchConversation,
         )
-        Divider(modifier = Modifier.fillMaxWidth().padding(12.dp)
-            .background(MaterialTheme.colorScheme.onSurface.copy(0.6F)))
+        Divider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .background(MaterialTheme.colorScheme.onSurface.copy(0.6F))
+        )
         NavigationDrawerItem(
             modifier = Modifier.padding(horizontal = 12.dp),
             label = {
-               Text(text = "Setting")
+                Text(text = "Setting")
             }, selected = false,
-            onClick = appNavigationDrawerViewModel::openSetting,
+            onClick = viewModel::onOpenSetting,
             shape = RoundedCornerShape(6.dp),
             icon = {
                 Icon(Icons.Rounded.Settings, contentDescription = "")
@@ -137,7 +139,7 @@ internal fun AppNavigationDrawerSheet(
             label = {
                 Text(text = "About")
             }, selected = false,
-            onClick = appNavigationDrawerViewModel::openSetting,
+            onClick = viewModel::onOpenAbout,
             shape = RoundedCornerShape(6.dp),
             icon = {
                 Icon(Icons.Rounded.Info, contentDescription = "")
@@ -149,12 +151,13 @@ internal fun AppNavigationDrawerSheet(
 @Composable
 internal fun ConversationList(
     modifier: Modifier = Modifier,
-    conversation: Conversation? = null,
+    currentConversation: Conversation? = null,
     conversations: List<Conversation> = emptyList(),
     onClickConversation: (Conversation) -> Unit = {},
 ) {
 
-    LazyColumn(modifier,
+    LazyColumn(
+        modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(conversations.size) {
@@ -162,7 +165,8 @@ internal fun ConversationList(
             ConversationItem(
                 Modifier,
                 item,
-                item == conversation) {
+                item == currentConversation
+            ) {
                 onClickConversation(item)
             }
         }
@@ -180,10 +184,8 @@ internal fun ConversationItem(
     NavigationDrawerItem(
         modifier = modifier,
         label = {
-            val title = if (conversation.title.isEmpty()) {
+            val title = conversation.title.ifEmpty {
                 "Untitled Conversation"
-            } else {
-                conversation.title
             }
             Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }, selected = selected,
@@ -194,6 +196,7 @@ internal fun ConversationItem(
         }
     )
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -212,54 +215,4 @@ internal fun NewConversationItem(
             Icon(Icons.Default.Add, contentDescription = "")
         }
     )
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Preview
-@Composable
-fun ConversationItemPreview() {
-    val conversations = listOf(
-        Conversation(
-            0,
-            "How to make money",
-        ),
-        Conversation(
-            1,
-            "How to make money",
-        ),
-        Conversation(
-            2,
-            "How to be rich",
-        ),
-    )
-
-    AppNavigationDrawerSheet(appNavigationDrawerViewModel = AppNavigationDrawerViewModel(
-        object : ChatClient {
-            override suspend fun send(message: Message): Flow<Message> {
-                TODO("Not yet implemented")
-            }
-
-            override fun messages(conversationId: Long): Flow<List<Message>> {
-                TODO("Not yet implemented")
-            }
-
-            override suspend fun conversation(): Conversation {
-                TODO("Not yet implemented")
-            }
-
-            override suspend fun conversation(id: Long): Flow<Conversation> {
-                TODO("Not yet implemented")
-            }
-
-            override fun conversations(): Flow<List<Conversation>> {
-                TODO("Not yet implemented")
-            }
-
-            override suspend fun delete(conversation: Conversation) {
-                TODO("Not yet implemented")
-            }
-        }
-    ))
-
 }
