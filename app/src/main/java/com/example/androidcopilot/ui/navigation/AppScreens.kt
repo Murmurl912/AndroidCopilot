@@ -1,5 +1,6 @@
-package com.example.androidcopilot.navigation
+package com.example.androidcopilot.ui.navigation
 
+import android.os.Bundle
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -15,11 +16,14 @@ sealed interface AppScreens {
         override val args: List<NamedNavArgument> = emptyList()
     }
 
-    object MessageScreen : AppScreens {
+    object ConversationScreen : AppScreens {
 
 
         const val ArgConversationId = "conversationId"
 
+        fun getConversationId(args: Bundle?): Long? {
+            return args?.getLong(ArgConversationId)
+        }
 
         override val args: List<NamedNavArgument> = listOf(
             navArgument(ArgConversationId) {
@@ -27,16 +31,11 @@ sealed interface AppScreens {
             },
         )
 
-        override val name: String = "messages".appendArgs(args)
+        override val name: String = "conversation".appendArgs(args)
 
         fun createRoute(conversationId: Long): String {
             return name.replace("{$ArgConversationId}", "$conversationId")
         }
-    }
-
-    object HomeScreen: AppScreens {
-        override val name: String = "home"
-        override val args: List<NamedNavArgument> = emptyList()
     }
 
     object SettingScreen: AppScreens {

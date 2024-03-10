@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.main
+package com.example.androidcopilot.ui.screens.main
 
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,7 +36,6 @@ sealed interface AppState {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @HiltViewModel
 class AppMainViewModel @Inject constructor(private val chatRepo: ChatRepository) : ViewModel() {
 
@@ -75,7 +74,9 @@ class AppMainViewModel @Inject constructor(private val chatRepo: ChatRepository)
     private suspend fun initCurrentConversation(): Long {
         return currentConversation.updateAndGet {
             if (it == null) {
-                val conversation = chatRepo.findEmptyConversationOrNewConversation(Conversation())
+                val conversation = chatRepo.findEmptyConversationOrNewConversation(Conversation(
+                    model = "gpt-3.5-turbo"
+                ))
                 conversation.id
             } else {
                 it

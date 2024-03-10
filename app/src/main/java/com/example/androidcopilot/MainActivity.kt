@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.view.WindowCompat
-import com.example.androidcopilot.ui.main.AndroidCopilotMain
+import com.example.androidcopilot.ui.screens.main.AndroidCopilotMain
 import com.example.androidcopilot.ui.theme.CompatComposeContent
 import dagger.hilt.android.AndroidEntryPoint
 

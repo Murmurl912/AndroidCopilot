@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -74,131 +75,145 @@ class OpenaiChatClient(
             type = Message.MessageType.TypeAssistant,
             status = Message.MessageStatus.StatusPending
         )
-        return openai.chatCompletions(request)
-            .map {
-                val delta = it.choices[0].delta
-                val messageStatus = when (it.choices[0].finishReason) {
-                    FinishReason.Stop -> {
-                        Message.MessageStatus.StatusSuccess
+
+        try {
+            return openai.chatCompletions(request)
+                .map {
+                    val delta = it.choices[0].delta
+                    val messageStatus = when (it.choices[0].finishReason) {
+                        FinishReason.Stop -> {
+                            Message.MessageStatus.StatusSuccess
+                        }
+
+                        FinishReason.Length -> {
+                            Message.MessageStatus.StatusSuccess
+                        }
+
+                        FinishReason.FunctionCall -> {
+                            Message.MessageStatus.StatusSuccess
+                        }
+
+                        else -> {
+                            Message.MessageStatus.StatusReceiving
+                        }
                     }
-                    FinishReason.Length -> {
-                        Message.MessageStatus.StatusSuccess
-                    }
-                    FinishReason.FunctionCall -> {
-                        Message.MessageStatus.StatusSuccess
-                    }
-                    else -> {
-                        Message.MessageStatus.StatusReceiving
-                    }
-                }
-                val type = if (delta.functionCall != null) {
-                    Message.MessageType.TypeFunctionCallRequest
-                } else {
-                    Message.MessageType.TypeAssistant
-                }
-                reply = reply.copy(
-                    content = reply.content + (delta.content?:""),
-                    functionName = delta.functionCall?.name,
-                    functionArgs = delta.functionCall?.arguments,
-                    updateAt = System.currentTimeMillis(),
-                    token = it.usage?.completionTokens?:0,
-                    status = messageStatus,
-                    type = type
-                )
-                scope.launch {
-                    if (reply.id == 0L) {
-                        reply = chatRepository.newMessage(reply)
-                        send = send.copy(
-                            child = reply.id,
-                            token = it.usage?.totalTokens?.let { total ->
-                                total - memoryTokens - reply.token
-                            } ?: 0,
-                            status = messageStatus
-                        )
-                        chatRepository.updateMessageStatusChildAndToken(
-                            send.id,
-                            messageStatus,
-                            it.usage?.totalTokens?.let { total ->
-                                total - memoryTokens - reply.token
-                            } ?: 0,
-                            reply.id
-                        )
+                    val type = if (delta.functionCall != null) {
+                        Message.MessageType.TypeFunctionCallRequest
                     } else {
-                        chatRepository.updateMessage(reply)
+                        Message.MessageType.TypeAssistant
                     }
-                }.join()
-                reply
-            }
-            .catch {
-                logger.error(TAG, it) {
-                    "error send message"
+                    reply = reply.copy(
+                        content = reply.content + (delta.content ?: ""),
+                        functionName = delta.functionCall?.name,
+                        functionArgs = delta.functionCall?.arguments,
+                        updateAt = System.currentTimeMillis(),
+                        token = it.usage?.completionTokens ?: 0,
+                        status = messageStatus,
+                        type = type
+                    )
+                    scope.launch {
+                        if (reply.id == 0L) {
+                            reply = chatRepository.newMessage(reply)
+                            send = send.copy(
+                                child = reply.id,
+                                token = it.usage?.totalTokens?.let { total ->
+                                    total - memoryTokens - reply.token
+                                } ?: 0,
+                                status = messageStatus
+                            )
+                            chatRepository.updateMessageStatusChildAndToken(
+                                send.id,
+                                messageStatus,
+                                it.usage?.totalTokens?.let { total ->
+                                    total - memoryTokens - reply.token
+                                } ?: 0,
+                                reply.id
+                            )
+                        } else {
+                            chatRepository.updateMessage(reply)
+                        }
+                    }.join()
+                    reply
                 }
-                // error
-                send = send.copy(
-                    status = Message.MessageStatus.StatusError,
-                    updateAt = System.currentTimeMillis(),
-                    child = reply.id
-                )
-                reply = reply.copy(
-                    status = Message.MessageStatus.StatusError,
-                    updateAt = System.currentTimeMillis()
-                )
-                emit(reply)
-                scope.launch {
-                    chatRepository.updateMessage(send)
-                    chatRepository.updateMessage(reply)
-                    chatRepository.refreshContextMessageOffset(conversation.id)
-                }.join()
-            }
-            .onCompletion {
-                if (it is CancellationException) {
-                    // canceled
+                .catch {
                     logger.error(TAG, it) {
-                        "request is canceled"
+                        "error send message"
                     }
+                    // error
                     send = send.copy(
-                        status = Message.MessageStatus.StatusStopped,
+                        status = Message.MessageStatus.StatusError,
                         updateAt = System.currentTimeMillis(),
                         child = reply.id
                     )
                     reply = reply.copy(
-                        status = Message.MessageStatus.StatusStopped,
-                        updateAt = System.currentTimeMillis(),
+                        status = Message.MessageStatus.StatusError,
+                        updateAt = System.currentTimeMillis()
                     )
-                } else {
-                    if (!send.isCompleted()) {
+                    emit(reply)
+                    scope.launch {
+                        chatRepository.updateMessage(send)
+                        chatRepository.updateMessage(reply)
+                        chatRepository.refreshContextMessageOffset(conversation.id)
+                    }.join()
+                }
+                .onCompletion {
+                    if (it is CancellationException) {
+                        // canceled
+                        logger.error(TAG, it) {
+                            "request is canceled"
+                        }
                         send = send.copy(
-                            status = Message.MessageStatus.StatusSuccess,
+                            status = Message.MessageStatus.StatusStopped,
                             updateAt = System.currentTimeMillis(),
                             child = reply.id
                         )
-                    }
-                    if (!reply.isCompleted()) {
                         reply = reply.copy(
-                            status = Message.MessageStatus.StatusSuccess,
+                            status = Message.MessageStatus.StatusStopped,
                             updateAt = System.currentTimeMillis(),
                         )
-                    }
-                    scope.launch {
-                        val hasTitle = conversation.title.isNotEmpty()
-                                && !chatRepository.findConversationById(conversation.id)
-                            ?.title.isNullOrEmpty()
-                        if (!hasTitle) {
-                            summarizeConversationTitle(
-                                send.content,
-                                reply.content,
-                                conversation
+                    } else {
+                        if (!send.isCompleted()) {
+                            send = send.copy(
+                                status = Message.MessageStatus.StatusSuccess,
+                                updateAt = System.currentTimeMillis(),
+                                child = reply.id
                             )
                         }
-                        chatRepository.updateConversationType(conversation.id, Conversation.ConversationType.TypePersistent)
+                        if (!reply.isCompleted()) {
+                            reply = reply.copy(
+                                status = Message.MessageStatus.StatusSuccess,
+                                updateAt = System.currentTimeMillis(),
+                            )
+                        }
+                        scope.launch {
+                            val hasTitle = conversation.title.isNotEmpty()
+                                    && !chatRepository.findConversationById(conversation.id)
+                                ?.title.isNullOrEmpty()
+                            if (!hasTitle) {
+                                summarizeConversationTitle(
+                                    send.content,
+                                    reply.content,
+                                    conversation
+                                )
+                            }
+                            chatRepository.updateConversationType(
+                                conversation.id,
+                                Conversation.ConversationType.TypePersistent
+                            )
+                        }
                     }
+                    scope.launch {
+                        chatRepository.updateMessage(send)
+                        chatRepository.updateMessage(reply)
+                        chatRepository.refreshContextMessageOffset(conversation.id)
+                    }.join()
                 }
-                scope.launch {
-                    chatRepository.updateMessage(send)
-                    chatRepository.updateMessage(reply)
-                    chatRepository.refreshContextMessageOffset(conversation.id)
-                }.join()
+        } catch (e: Exception) {
+            logger.error(TAG, e) {
+                "error send message"
             }
+            return emptyFlow()
+        }
     }
 
     private suspend fun summarizeConversationTitle(

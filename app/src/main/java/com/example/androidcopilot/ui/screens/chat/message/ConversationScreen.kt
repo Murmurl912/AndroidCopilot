@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.chat.message
+package com.example.androidcopilot.ui.screens.chat.message
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.interaction.DragInteraction
@@ -56,11 +56,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.example.androidcopilot.chat.model.Message
-import com.example.androidcopilot.ui.chat.input.TextSpeechInput
-import com.example.androidcopilot.ui.chat.input.rememberTextSpeechInputState
-import com.example.androidcopilot.ui.main.AppMainViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import com.example.androidcopilot.ui.screens.chat.input.TextSpeechInput
+import com.example.androidcopilot.ui.screens.chat.input.rememberTextSpeechInputState
+import com.example.androidcopilot.ui.screens.main.AppMainViewModel
 import kotlinx.coroutines.flow.filterIsInstance
 
 @SuppressLint("UnrememberedMutableState")
@@ -68,24 +66,28 @@ import kotlinx.coroutines.flow.filterIsInstance
 @Composable
 fun MessageScreen(
     mainViewModel: AppMainViewModel,
-    messageViewModel: MessageViewModel,
+    conversationViewModel: ConversationViewModel,
 ) {
 
-    val conversation by messageViewModel.conversation.collectAsState()
-    val messages by messageViewModel.messages.collectAsState()
+    val conversation by conversationViewModel.conversation.collectAsState()
+    val messages by conversationViewModel.messages.collectAsState()
     var showMenu by remember {
         mutableStateOf(false)
     }
     var showDelete by remember {
         mutableStateOf(false)
     }
-    val isSendingMessage by messageViewModel.isSendingMessage.collectAsState()
+    val isSendingMessage by conversationViewModel.isSendingMessage.collectAsState()
     Scaffold(
         topBar = {
             TopAppBar(title = {
-                val title = conversation.title.ifEmpty {
-                    "Untitled Conversation"
-                }
+                val title = conversation?.title.let {
+                    if (it.isNullOrEmpty()) {
+                        null
+                    } else {
+                        it
+                    }
+                } ?: "Android Copilot"
                 Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }, navigationIcon = {
                 IconButton(onClick = {
@@ -104,7 +106,7 @@ fun MessageScreen(
                     showMenu = false
                 }, onNewChat = {
                     showMenu = false
-                    messageViewModel.onNewConversation()
+                    conversationViewModel.onNewConversation()
                 }, onDelete = {
                     showMenu = false
                     showDelete = true
@@ -122,12 +124,11 @@ fun MessageScreen(
                 .weight(1F)
                 .fillMaxWidth(),
                 messages = messages,
-                messageViewModel.scrollCommand
             )
             val textSpeechInputState = rememberTextSpeechInputState(
                 isSending = isSendingMessage,
                 onSend = { input ->
-                    messageViewModel.send(input, emptyList())
+                    conversationViewModel.send(input, emptyList())
                 }
             )
             TextSpeechInput(
@@ -138,7 +139,7 @@ fun MessageScreen(
         MessageDeleteDialog(show = showDelete, onDismissRequest = {
             showDelete = false
         }, onDelete = {
-            messageViewModel.onDeleteConversation(conversation)
+            conversationViewModel.onDeleteConversation()
             showDelete = false
         })
     }
@@ -149,9 +150,6 @@ fun MessageScreen(
 fun MessageList(
     modifier: Modifier = Modifier,
     messages: List<Message> = emptyList(),
-    scrollCommand: Flow<MessageViewModel.ScrollCommand> = remember {
-        emptyFlow()
-    }
 ) {
     val lazyListState = rememberLazyListState()
     LaunchedEffect(lazyListState) {
@@ -219,21 +217,6 @@ fun MessageList(
             Spacer(modifier = Modifier
                 .height(1.dp)
                 .fillMaxWidth())
-        }
-    }
-
-    LaunchedEffect(scrollCommand) {
-        scrollCommand.collect {
-            when (it) {
-                MessageViewModel.ScrollCommand.Noop -> {
-                    // noop
-                }
-                is MessageViewModel.ScrollCommand.ScrollTo -> {
-                    val index = (it.index - 1).coerceAtLeast(0)
-                    lazyListState.scrollToItem(index.coerceAtLeast(0), it.offset)
-                    lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-                }
-            }
         }
     }
 }

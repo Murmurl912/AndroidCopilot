@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.chat.input
+package com.example.androidcopilot.ui.screens.chat.input
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -459,23 +459,6 @@ fun TextSpeechInput(
     }
 
 }
-
-
-@Composable
-fun AudioVisualizer(
-    modifier: Modifier,
-    barWidth: Dp,
-    barGap: Dp,
-    barCornerRadius: Dp,
-    bars: List<Float>
-) {
-    Canvas(modifier = modifier) {
-        val maxBarCount = size.width / (barWidth.toPx() + barGap.toPx())
-        val maxBarHeight = size.height / 2F
-
-    }
-}
-
 
 @Preview
 @Composable

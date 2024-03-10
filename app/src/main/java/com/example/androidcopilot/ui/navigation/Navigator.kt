@@ -1,4 +1,4 @@
-package com.example.androidcopilot.navigation
+package com.example.androidcopilot.ui.navigation
 
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions

@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.setting
+package com.example.androidcopilot.ui.screens.setting
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

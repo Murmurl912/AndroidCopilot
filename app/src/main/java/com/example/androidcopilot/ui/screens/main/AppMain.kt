@@ -1,12 +1,10 @@
-package com.example.androidcopilot.ui.main
+package com.example.androidcopilot.ui.screens.main
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -15,11 +13,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.androidcopilot.navigation.AppScreens
-import com.example.androidcopilot.navigation.Navigator
-import com.example.androidcopilot.ui.chat.message.MessageScreen
-import com.example.androidcopilot.ui.chat.message.MessageViewModel
-import com.example.androidcopilot.ui.setting.AppSettingScreen
+import com.example.androidcopilot.ui.navigation.AppScreens
+import com.example.androidcopilot.ui.navigation.Navigator
+import com.example.androidcopilot.ui.screens.chat.message.ConversationViewModel
+import com.example.androidcopilot.ui.screens.chat.message.MessageScreen
+import com.example.androidcopilot.ui.screens.setting.AppSettingScreen
 import com.example.compose.AppTheme
 
 
@@ -38,6 +36,7 @@ fun AndroidCopilotMain() {
 
 }
 
+
 @Composable
 internal fun AndroidCopilotNavigation(
     controller: NavHostController,
@@ -53,10 +52,12 @@ internal fun AndroidCopilotNavigation(
             when (state) {
                 is AppState.AppInitialized -> {
                     LaunchedEffect(state) {
-                        val conversationId  = (state as AppState.AppInitialized).conversationId
-                        Navigator.navigate(AppScreens.MessageScreen.createRoute(
-                            conversationId
-                        )) {
+                        val conversationId = (state as AppState.AppInitialized).conversationId
+                        Navigator.navigate(
+                            AppScreens.ConversationScreen.createRoute(
+                                conversationId
+                            )
+                        ) {
                             popUpTo(AppScreens.MainSplashScreen.name) {
                                 inclusive = true
                             }
@@ -73,13 +74,16 @@ internal fun AndroidCopilotNavigation(
             }
         }
         composable(
-            route = AppScreens.MessageScreen.name,
-            arguments = AppScreens.MessageScreen.args
+            route = AppScreens.ConversationScreen.name,
+            arguments = AppScreens.ConversationScreen.args
         ) {
             MessageScreen(
                 mainViewModel = viewModel,
-                messageViewModel = hiltViewModel<MessageViewModel>().apply {
-
+                conversationViewModel = hiltViewModel<ConversationViewModel>().apply {
+                    val id = AppScreens.ConversationScreen.getConversationId(it.arguments)
+                    if (id != null) {
+                        switchConversation(id)
+                    }
                 }
             )
         }

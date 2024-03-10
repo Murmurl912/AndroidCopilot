@@ -7,14 +7,15 @@ import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 
 
-val LocalWindow = staticCompositionLocalOf<Window?> {
+val LocalWindow = compositionLocalOf<Window?> {
     null
 }
 
-val LocalWindowSizeClass = staticCompositionLocalOf<WindowSizeClass?> {
+val LocalWindowSizeClass = compositionLocalOf<WindowSizeClass?> {
     null
 }
 

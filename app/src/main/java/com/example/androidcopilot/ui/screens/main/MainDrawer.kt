@@ -1,4 +1,4 @@
-package com.example.androidcopilot.ui.main
+package com.example.androidcopilot.ui.screens.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
