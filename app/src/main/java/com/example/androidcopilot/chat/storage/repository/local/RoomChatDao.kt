@@ -1,4 +1,4 @@
-package com.example.androidcopilot.chat.repository.local
+package com.example.androidcopilot.chat.storage.repository.local
 
 import androidx.paging.PagingSource
 import androidx.room.Dao

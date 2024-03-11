@@ -1,6 +1,7 @@
-package com.example.androidcopilot.chat.api
+package com.example.androidcopilot.chat.provider
 
 import com.example.androidcopilot.chat.model.Conversation
+import com.example.androidcopilot.chat.provider.ChatApi
 
 interface ChatApiProvider {
 

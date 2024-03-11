@@ -1,10 +1,10 @@
-package com.example.androidcopilot.chat.repository.local
+package com.example.androidcopilot.chat.storage.repository.local
 
 import androidx.paging.PagingSource
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
-import com.example.androidcopilot.chat.repository.ChatRepository
+import com.example.androidcopilot.chat.storage.repository.ChatRepository
 import kotlinx.coroutines.flow.Flow
 
 class LocalChatRepository(private val roomChatDao: RoomChatDao) : ChatRepository {

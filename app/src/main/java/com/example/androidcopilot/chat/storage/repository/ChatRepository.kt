@@ -1,4 +1,4 @@
-package com.example.androidcopilot.chat.repository
+package com.example.androidcopilot.chat.storage.repository
 
 import androidx.paging.PagingSource
 import com.example.androidcopilot.chat.model.Attachment

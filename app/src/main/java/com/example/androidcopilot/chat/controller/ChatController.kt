@@ -1,12 +1,12 @@
-package com.example.androidcopilot.chat.api.impl
+package com.example.androidcopilot.chat.controller
 
 import com.example.androidcopilot.app.log.AppLogger
-import com.example.androidcopilot.chat.api.ChatApiProvider
-import com.example.androidcopilot.chat.api.ChatControllerApi
+import com.example.androidcopilot.chat.provider.ChatApiProvider
+import com.example.androidcopilot.chat.controller.api.ChatControllerApi
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
-import com.example.androidcopilot.chat.repository.ChatRepository
+import com.example.androidcopilot.chat.storage.repository.ChatRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
-const val TAG = "ChatController"
 
 class ChatController(
     private val chatRepository: ChatRepository,
@@ -255,5 +254,8 @@ class ChatController(
         return reply
     }
 
+    companion object {
+        const val TAG = "ChatController"
+    }
 }
 

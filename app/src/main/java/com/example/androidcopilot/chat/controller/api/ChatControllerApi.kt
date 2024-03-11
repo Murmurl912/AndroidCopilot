@@ -1,4 +1,4 @@
-package com.example.androidcopilot.chat.api
+package com.example.androidcopilot.chat.controller.api
 
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation

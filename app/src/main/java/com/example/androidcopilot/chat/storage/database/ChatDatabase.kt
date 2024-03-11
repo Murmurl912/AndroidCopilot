@@ -1,4 +1,4 @@
-package com.example.androidcopilot.chat.database
+package com.example.androidcopilot.chat.storage.database
 
 import android.content.Context
 import androidx.room.AutoMigration
@@ -13,7 +13,7 @@ import com.example.androidcopilot.app.ApplicationDependencies
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
-import com.example.androidcopilot.chat.repository.local.RoomChatDao
+import com.example.androidcopilot.chat.storage.repository.local.RoomChatDao
 
 
 @Database(
