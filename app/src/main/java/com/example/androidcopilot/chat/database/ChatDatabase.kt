@@ -34,44 +34,6 @@ abstract class ChatDatabase: RoomDatabase() {
         private val callback = object: Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
-                // trigger for message count update
-                db.execSQL(
-                    """
-                CREATE TRIGGER update_message_count
-                AFTER INSERT ON Message
-                BEGIN
-                    UPDATE Conversation
-                    SET messageCount = messageCount + 1
-                    WHERE id = NEW.conversation;
-                END;
-                
-                CREATE TRIGGER update_message_count_on_delete
-                AFTER DELETE ON Message
-                BEGIN
-                    UPDATE Conversation
-                    SET messageCount = messageCount - 1
-                    WHERE id = OLD.conversation;
-                END;
-                    """.trimIndent()
-                )
-                db.execSQL("""
-                    
-                CREATE TRIGGER update_latest_message_id_on_insert
-                AFTER INSERT ON Message
-                BEGIN
-                    UPDATE Conversation
-                    SET latestMessageId = NEW.id
-                    WHERE id = NEW.conversation;
-                END;
-                
-                CREATE TRIGGER update_latest_message_id_on_delete
-                AFTER DELETE ON Message
-                BEGIN
-                    UPDATE Conversation
-                    SET latestMessageId = OLD.id
-                    WHERE id = OLD.conversation;
-                END;
-                """.trimIndent())
             }
         }
 

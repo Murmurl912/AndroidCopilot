@@ -25,4 +25,5 @@ object Versions {
     const val TensorflowLite = "0.4.4"
     const val Jna = "5.13.0"
     const val VoskAndroid = "0.3.47"
+    const val Jtokkit = "1.0.0"
 }

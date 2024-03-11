@@ -71,7 +71,6 @@ dependencies {
 
     implementation(Dependencies.Moshi)
     implementation(Dependencies.MoshiAdapters)
-    implementation("com.google.android.material:material:1.9.0")
     kapt(Dependencies.MoshiCodeGen)
 
     implementation(Dependencies.Retrofit)
@@ -113,6 +112,8 @@ dependencies {
 
     implementation(Dependencies.TensorflowLiteTaskAudio)
     implementation(Dependencies.TensorflowLiteGpuDelegatePlugin)
+
+    implementation(Dependencies.Jtokkit)
 
     testImplementation(Dependencies.Junit)
     androidTestImplementation(Dependencies.AndroidxTestExtJunit)

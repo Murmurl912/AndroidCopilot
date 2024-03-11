@@ -40,7 +40,6 @@
             android:exported="false"
             tools:node="merge"
             >
-            <!-- This entry makes ExampleLoggerInitializer discoverable. -->
             <meta-data
                 android:name="com.example.androidcopilot.app.startup.ApplicationDependenciesStartup"
                 android:value="androidx.startup" />

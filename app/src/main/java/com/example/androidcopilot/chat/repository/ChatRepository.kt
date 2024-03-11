@@ -8,17 +8,11 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
 
-    suspend fun tryLockConversation(conversationId: Long): Conversation?
-
-    suspend fun unlockConversation(conversationId: Long)
-
-    suspend fun refreshContextMessageOffset(conversationId: Long): Conversation?
-
     fun conversationListFlow(): Flow<List<Conversation>>
 
     suspend fun conversations(offset: Int, limit: Int): List<Conversation>
 
-    fun conversation(id: Long): Flow<Conversation>
+    fun conversation(id: String): Flow<Conversation>
 
     suspend fun newConversation(conversation: Conversation): Conversation
 
@@ -26,51 +20,47 @@ interface ChatRepository {
 
     suspend fun deleteConversation(conversation: Conversation): Conversation?
 
-    suspend fun updateConversationTitle(conversationId: Long, title: String)
+    suspend fun updateConversationTitle(conversationId: String, title: String)
 
-    suspend fun updateConversationType(conversationId: Long, type: Conversation.ConversationType)
+    suspend fun updateConversationType(conversationId: String, type: Conversation.ConversationType)
 
-    suspend fun findConversationById(id: Long): Conversation?
+    suspend fun updateConversation(conversation: Conversation)
 
-    fun messageListFlow(conversationId: Long): Flow<List<Message>>
+    suspend fun findConversationById(id: String): Conversation?
 
-    suspend fun messages(conversation: Conversation, offset: Int, limit: Int): List<Message>
+    fun messageListFlow(conversationId: String): Flow<List<Message>>
 
-    suspend fun contextMessages(conversationId: Long): List<Message>
 
-    suspend fun newMessage(message: Message): Message
+    suspend fun newMessage(message: Message, attachments: List<Attachment>): Message
 
-    suspend fun updateMessage(message: Message): Message?
+    suspend fun updateMessage(message: Message): Message
 
     suspend fun updateMessageStatusAndContent(
-        messageId: Long,
+        messageId: String,
         status: Message.MessageStatus,
         content: String
     )
 
-    suspend fun updateMessageStatusChildAndToken(
-        messageId: Long,
-        status: Message.MessageStatus,
-        token: Int,
-        child: Long,
-    )
 
     suspend fun deleteMessage(message: Message): Message?
 
-    suspend fun findMessageById(id: Long): Message?
+    suspend fun findMessageById(id: String): Message?
 
     suspend fun newAttachment(attachment: Attachment): Attachment?
+
+    suspend fun newAttachments(attachments: List<Attachment>): List<Attachment>
 
     suspend fun deleteAttachment(attachment: Attachment): Attachment?
 
     suspend fun updateAttachment(attachment: Attachment): Attachment?
 
-    suspend fun findAttachmentById(id: Long): Attachment?
+    suspend fun findAttachmentById(id: String): Attachment?
 
-    suspend fun findAttachmentByMessage(id: Long): List<Attachment>
+    suspend fun findAttachmentByMessage(id: String): List<Attachment>
 
     fun conversationPagingSource(): PagingSource<Int, Conversation>
 
-    fun messagePagingSource(conversation: Conversation): PagingSource<Int, Message>
+
+    suspend fun findConversationMessages(conversationId: String, limit: Int = Int.MAX_VALUE, offset: Int = 0): List<Message>
 
 }

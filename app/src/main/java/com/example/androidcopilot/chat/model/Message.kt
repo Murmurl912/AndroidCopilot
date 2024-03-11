@@ -31,18 +31,16 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 @Keep
 data class Message(
-    @PrimaryKey(autoGenerate = true)
-    var id: Long = 0,
-    @ColumnInfo(defaultValue = "NULL")
-    val parent: Long? = null,
-    @ColumnInfo(defaultValue = "NULL")
-    val child: Long? = null,
-    val conversation: Long,
+    @PrimaryKey
+    var id: String,
+    val parent: String? = null,
+    val child: String? = null,
+    val conversation: String,
     val type: MessageType,
     val content: String,
-    val includeInMemory: Boolean = true,
+    val role: MessageRole,
+    val error: String? = null,
     val status: MessageStatus = MessageStatus.StatusRequesting,
-    val token: Int = 0,
     val functionName: String? = null,
     val functionArgs: String? = null,
     @ColumnInfo(defaultValue = "CURRENT_TIMESTAMP")
@@ -66,13 +64,16 @@ data class Message(
     }
 
     enum class MessageType {
-        TypeAssistant,
-        TypeFunctionCallRequest,
-        TypeFunctionCallResponse,
-        TypeHuman,
-        TypeSystem,
+        TypeText,
+        TypeFunctionCall,
+        TypeFunctionCallResult,
     }
 
+    enum class MessageRole {
+        RoleAssistant,
+        RoleUser,
+        RoleSystem,
+    }
 }
 
 

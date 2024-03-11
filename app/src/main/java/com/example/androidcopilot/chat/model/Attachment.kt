@@ -13,11 +13,12 @@ import java.io.Serializable
 @Keep
 data class Attachment(
     @PrimaryKey(autoGenerate = true)
-    val id: Long,
+    val id: String,
     val type: String,
     val title: String? = null,
     val name: String? = null,
-    val messageId: Long = 0,
+    val message: String?,
+    val conversation: String?,
     val thumbnail: String? = null,
     val contentUrl: String? = null,
     val contentFile: Long = 0,

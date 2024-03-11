@@ -1,6 +1,7 @@
-package com.example.androidcopilot.chat
+package com.example.androidcopilot.app.log
 
 import android.util.Log
+import com.example.androidcopilot.app.log.AppLogger
 
 object LogcatLogger: AppLogger {
 

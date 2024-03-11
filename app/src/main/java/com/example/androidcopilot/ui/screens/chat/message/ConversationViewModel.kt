@@ -2,7 +2,7 @@ package com.example.androidcopilot.ui.screens.chat.message
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.androidcopilot.chat.ChatClient
+import com.example.androidcopilot.chat.api.ChatManager
 import com.example.androidcopilot.chat.model.Attachment
 import com.example.androidcopilot.chat.model.Conversation
 import com.example.androidcopilot.chat.model.Message
@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ConversationViewModel @Inject constructor(private val chatClient: ChatClient) : ViewModel() {
+class ConversationViewModel @Inject constructor(private val conversationManager: ChatManager) : ViewModel() {
 
     private val conversationIdState: MutableStateFlow<Long?> = MutableStateFlow(null)
     val conversation: MutableStateFlow<Conversation?> = MutableStateFlow(null)
@@ -35,7 +35,7 @@ class ConversationViewModel @Inject constructor(private val chatClient: ChatClie
         viewModelScope.launch {
             conversationIdState.flatMapConcat {
                 if (it != null) {
-                    chatClient.conversation(it)
+                    conversationManager.conversation(it)
                 } else {
                     emptyFlow()
                 }
@@ -46,7 +46,7 @@ class ConversationViewModel @Inject constructor(private val chatClient: ChatClie
         viewModelScope.launch {
             conversationIdState.flatMapConcat {
                 if (it != null) {
-                    chatClient.messages(it)
+                    conversationManager.messages(it)
                 } else {
                     emptyFlow()
                 }
@@ -77,7 +77,7 @@ class ConversationViewModel @Inject constructor(private val chatClient: ChatClie
     }
 
     private suspend fun sendChecked(conversation: Conversation, input: String, attachments: List<Attachment>) {
-        chatClient.send(
+        conversationManager.send(
             Message(
                 conversation = conversation.id,
                 content = input,

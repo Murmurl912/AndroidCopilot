@@ -7,41 +7,27 @@ import com.example.androidcopilot.chat.model.Message
 import com.example.androidcopilot.chat.repository.ChatRepository
 import kotlinx.coroutines.flow.Flow
 
-class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository {
-
-    override suspend fun tryLockConversation(conversationId: Long): Conversation? {
-        return roomChatDao.tryLockConversation(conversationId)
-    }
-
-    override suspend fun unlockConversation(conversationId: Long) {
-        roomChatDao.unlockConversation(conversationId)
-    }
-
-    override suspend fun refreshContextMessageOffset(conversationId: Long): Conversation? {
-        return roomChatDao.updateConversationContextLimit(conversationId)
-    }
-
-    override suspend fun contextMessages(conversationId: Long): List<Message> {
-        return roomChatDao.contextMessages(conversationId)
-    }
+class LocalChatRepository(private val roomChatDao: RoomChatDao) : ChatRepository {
 
     override fun conversationListFlow(): Flow<List<Conversation>> {
-        return roomChatDao.conversationsFlow(listOf(
-            Conversation.ConversationType.TypePersistent
-        ))
+        return roomChatDao.watchConversations(
+            listOf(
+                Conversation.ConversationType.TypePersistent
+            )
+        )
     }
 
     override suspend fun conversations(offset: Int, limit: Int): List<Conversation> {
         return roomChatDao.findConversations(offset, limit)
     }
 
-    override fun conversation(id: Long): Flow<Conversation> {
-        return roomChatDao.conversationFlow(id)
+    override fun conversation(id: String): Flow<Conversation> {
+        return roomChatDao.watchConversation(id)
     }
 
     override suspend fun newConversation(conversation: Conversation): Conversation {
-        val id = roomChatDao.newConversation(conversation)
-        return roomChatDao.findConversationById(id)!!
+        roomChatDao.newConversation(conversation)
+        return roomChatDao.findConversationById(conversation.id)!!
     }
 
     override suspend fun findEmptyConversationOrNewConversation(conversation: Conversation): Conversation {
@@ -54,58 +40,46 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return deleted
     }
 
-    override suspend fun updateConversationTitle(conversationId: Long, title: String) {
+    override suspend fun updateConversationTitle(conversationId: String, title: String) {
         roomChatDao.updateConversationTitle(conversationId, title)
     }
 
     override suspend fun updateConversationType(
-        conversationId: Long,
+        conversationId: String,
         type: Conversation.ConversationType
     ) {
         roomChatDao.updateConversationType(conversationId, type)
     }
 
-    override suspend fun findConversationById(id: Long): Conversation? {
+    override suspend fun updateConversation(conversation: Conversation) {
+        roomChatDao.updateConversation(conversation)
+    }
+
+    override suspend fun findConversationById(id: String): Conversation? {
         return roomChatDao.findConversationById(id)
     }
 
-    override fun messageListFlow(conversationId: Long): Flow<List<Message>> {
-        return roomChatDao.conversationMessageFlow(conversationId, 0, Int.MAX_VALUE)
+    override fun messageListFlow(conversationId: String): Flow<List<Message>> {
+        return roomChatDao.watchConversationMessages(conversationId, 0, Int.MAX_VALUE)
     }
 
-    override suspend fun messages(
-        conversation: Conversation,
-        offset: Int,
-        limit: Int
-    ): List<Message> {
-        return roomChatDao.findConversationMessages(conversation.id, 0, Int.MAX_VALUE)
+
+    override suspend fun newMessage(message: Message, attachments: List<Attachment>): Message {
+        roomChatDao.newMessage(message)
+        return roomChatDao.findMessage(message.id)!!
     }
 
-    override suspend fun newMessage(message: Message): Message {
-        val id = roomChatDao.newMessage(message)
-        return roomChatDao.findMessage(id)!!
-    }
-
-    override suspend fun updateMessage(message: Message): Message? {
+    override suspend fun updateMessage(message: Message): Message {
         roomChatDao.updateMessage(message)
-        return roomChatDao.findMessage(message.id)
+        return roomChatDao.findMessage(message.id)!!
     }
 
     override suspend fun updateMessageStatusAndContent(
-        messageId: Long,
+        messageId: String,
         status: Message.MessageStatus,
         content: String
     ) {
         roomChatDao.updateMessageStatusAndContent(messageId, status, content)
-    }
-
-    override suspend fun updateMessageStatusChildAndToken(
-        messageId: Long,
-        status: Message.MessageStatus,
-        token: Int,
-        child: Long,
-    ) {
-        roomChatDao.updateMessageStatusAndToken(messageId, status, token, child)
     }
 
     override suspend fun deleteMessage(message: Message): Message? {
@@ -114,13 +88,18 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return deleted
     }
 
-    override suspend fun findMessageById(id: Long): Message? {
+    override suspend fun findMessageById(id: String): Message? {
         return roomChatDao.findMessage(id)
     }
 
     override suspend fun newAttachment(attachment: Attachment): Attachment? {
-        val id = roomChatDao.newAttachment(attachment)
-        return roomChatDao.findAttachmentById(id)
+        val id = roomChatDao.newAttachments(listOf(attachment)).firstOrNull() ?: return null
+        return roomChatDao.findAttachmentById(attachment.id)
+    }
+
+    override suspend fun newAttachments(attachments: List<Attachment>): List<Attachment> {
+        roomChatDao.newAttachments(attachments)
+        return attachments.mapNotNull { roomChatDao.findAttachmentById(it.id) }
     }
 
     override suspend fun deleteAttachment(attachment: Attachment): Attachment? {
@@ -134,11 +113,11 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.findAttachmentById(attachment.id)
     }
 
-    override suspend fun findAttachmentById(id: Long): Attachment? {
+    override suspend fun findAttachmentById(id: String): Attachment? {
         return roomChatDao.findAttachmentById(id)
     }
 
-    override suspend fun findAttachmentByMessage(id: Long): List<Attachment> {
+    override suspend fun findAttachmentByMessage(id: String): List<Attachment> {
         return roomChatDao.findMessageAttachment(id)
     }
 
@@ -146,8 +125,12 @@ class LocalChatRepository(private val roomChatDao: RoomChatDao): ChatRepository 
         return roomChatDao.conversationPagingSource()
     }
 
-    override fun messagePagingSource(conversation: Conversation): PagingSource<Int, Message> {
-        return roomChatDao.conversationMessagePagingSource(conversation.id)
+    override suspend fun findConversationMessages(
+        conversationId: String,
+        limit: Int,
+        offset: Int
+    ): List<Message> {
+        return roomChatDao.findMessagesByConversations(conversationId, limit, offset)
     }
 
 }

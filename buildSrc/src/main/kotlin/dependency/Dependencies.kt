@@ -69,5 +69,8 @@ object Dependencies {
     const val Jna = "net.java.dev.jna:jna:${Versions.Jna}"
     const val VoskAndroid = "com.alphacephei:vosk-android:${Versions.VoskAndroid}"
 
+    // tokenizer
+    const val Jtokkit = "com.knuddels:jtokkit:${Versions.Jtokkit}"
+
 
 }
